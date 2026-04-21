@@ -3,6 +3,17 @@
     "spawnRateMs": 2000,
     "maxCount": 20,
     "spawnRadius": 50,
-    "baseHealth": 50
+    "baseHealth": 50,
+    "playerAvoidRadius": 12,
+    "biomeSpawnWeight": {
+      "desert": 1,
+      "graveyard": 2.8,
+      "ruins": 1.4,
+      "forest": 1.1,
+      "town": 1.7
+    },
+    "hotspotAreaTypeMultiplier": {
+      "graveyard_hotspot": 2.5
+    }
   }
 }

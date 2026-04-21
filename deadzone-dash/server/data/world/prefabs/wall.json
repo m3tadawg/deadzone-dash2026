@@ -1,0 +1,8 @@
+{
+  "id": "wall",
+  "width": 10,
+  "height": 4,
+  "depth": 2,
+  "color": "#404040",
+  "collision": true
+}

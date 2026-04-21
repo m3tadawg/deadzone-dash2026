@@ -1,50 +1,64 @@
-const fs = require('fs');
-const path = require('path');
+const { loadWorldCatalog } = require('./WorldCatalog');
 
 class WorldSystem {
     constructor() {
-        this.config = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/world.json'), 'utf8'));
-        this.chunkSize = 40;
-        this.gridSize = 10; // 10x10 chunks = 400x400 map
+        this.catalog = loadWorldCatalog();
+        this.chunkSize = this.catalog.chunkSize || 40;
+        this.gridSize = this.catalog.gridSize || 10;
         this.grid = new Map();
-        
+
         this.generate();
     }
 
     generate() {
-        console.log("Generating World...");
+        console.log('Generating World...');
         const halfGrid = Math.floor(this.gridSize / 2);
+        const biomeIds = Object.keys(this.catalog.biomes);
 
-        // 1. Fill with default (mostly desert)
         for (let cx = -halfGrid; cx < halfGrid; cx++) {
             for (let cz = -halfGrid; cz < halfGrid; cz++) {
                 this.grid.set(`${cx},${cz}`, {
-                    biome: "desert",
-                    prefabs: []
+                    biome: this.pickBiomeByProbability(),
+                    prefabs: [],
+                    areas: []
                 });
             }
         }
 
-        // 2. Guarantee biomes
-        this.ensureBiome("graveyard", this.config.biomes.graveyard.guaranteedCount);
-        this.ensureBiome("ruins", this.config.biomes.ruins.guaranteedCount);
+        biomeIds.forEach((biomeId) => {
+            const guaranteedCount = this.catalog.biomes[biomeId].guaranteedCount || 0;
+            if (guaranteedCount > 0) this.ensureBiome(biomeId, guaranteedCount);
+        });
 
-        // 3. Populate chunks with prefabs
         for (const [key, chunk] of this.grid.entries()) {
             this.populateChunk(chunk, key);
         }
-        
+
         console.log(`World generated with ${this.grid.size} chunks.`);
+    }
+
+    pickBiomeByProbability() {
+        const entries = Object.entries(this.catalog.biomes);
+        const total = entries.reduce((sum, [, biome]) => sum + (biome.probability || 0), 0);
+        if (total <= 0) return this.catalog.defaultBiome || entries[0][0];
+
+        const roll = Math.random() * total;
+        let accumulator = 0;
+        for (const [id, biome] of entries) {
+            accumulator += biome.probability || 0;
+            if (roll <= accumulator) return id;
+        }
+        return entries[entries.length - 1][0];
     }
 
     ensureBiome(type, count) {
         let placed = 0;
         const keys = Array.from(this.grid.keys());
-        
+
         while (placed < count) {
             const randomKey = keys[Math.floor(Math.random() * keys.length)];
             const chunk = this.grid.get(randomKey);
-            if (chunk.biome === "desert") {
+            if (chunk.biome !== type) {
                 chunk.biome = type;
                 placed++;
             }
@@ -54,88 +68,76 @@ class WorldSystem {
     populateChunk(chunk, key) {
         const [cx, cz] = key.split(',').map(Number);
         const biomeId = chunk.biome;
-
-        let prefabCount = 4 + Math.floor(Math.random() * 5);
-        let types = ['crate', 'barrel', 'rubble'];
-
-        if (biomeId === 'graveyard') {
-            prefabCount = 10 + Math.floor(Math.random() * 8);
-            types = ['grave', 'grave', 'rubble', 'crate'];
-        } else if (biomeId === 'ruins') {
-            prefabCount = 12 + Math.floor(Math.random() * 10);
-            types = ['wall', 'car', 'vending', 'barrel', 'crate', 'rubble'];
-        }
+        const density = this.catalog.biomePrefabDensity[biomeId] || { min: 4, max: 8 };
+        const prefabCount = density.min + Math.floor(Math.random() * (density.max - density.min + 1));
+        const pool = this.catalog.biomePrefabPools[biomeId] || ['crate'];
 
         for (let i = 0; i < prefabCount; i++) {
-            const type = types[Math.floor(Math.random() * types.length)];
-            chunk.prefabs.push({
-                type: type,
+            const type = pool[Math.floor(Math.random() * pool.length)];
+            const prefab = {
+                type,
                 x: cx * this.chunkSize + (Math.random() * 0.8 + 0.1) * this.chunkSize,
                 z: cz * this.chunkSize + (Math.random() * 0.8 + 0.1) * this.chunkSize,
                 rotation: Math.random() * Math.PI * 2
-            });
+            };
+            chunk.prefabs.push(prefab);
+            this.registerRegionFromPrefab(chunk, prefab, biomeId);
         }
     }
 
-    // ==========================================
-    // COLLISION LOGIC (OBB using SAT)
-    // ==========================================
+    registerRegionFromPrefab(chunk, prefab, biomeId) {
+        Object.entries(this.catalog.regions).forEach(([regionId, region]) => {
+            if (region.sourceBiomes && !region.sourceBiomes.includes(biomeId)) return;
+            if (region.triggerPrefabs && !region.triggerPrefabs.includes(prefab.type)) return;
 
-    /**
-     * Checks if a circular entity overlaps any physical prefab in its vicinity.
-     */
+            chunk.areas.push({
+                type: regionId,
+                x: prefab.x,
+                z: prefab.z,
+                radius: region.radius || 10,
+                spawnMultiplier: region.spawnMultiplier || 1,
+                lootMultiplier: region.lootMultiplier || 1
+            });
+        });
+    }
+
     isPositionBlocked(x, z, radius) {
         const cx = Math.floor(x / this.chunkSize);
         const cz = Math.floor(z / this.chunkSize);
 
-        // Check local and 8 neighboring chunks to be safe near boundaries
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
                 const chunk = this.grid.get(`${cx + dx},${cz + dz}`);
                 if (!chunk) continue;
 
                 for (const p of chunk.prefabs) {
-                    const def = this.config.prefabs[p.type];
-                    if (!def.collision) continue;
+                    const def = this.catalog.prefabs[p.type];
+                    if (!def || !def.collision) continue;
 
-                    if (this.checkCircleOBB(x, z, radius, p, def)) {
-                        return true;
-                    }
+                    if (this.checkCircleOBB(x, z, radius, p, def)) return true;
                 }
             }
         }
         return false;
     }
 
-    /**
-     * Circle-OBB Intersection test
-     */
     checkCircleOBB(px, pz, radius, prefab, def) {
-        // Transform player into local space of the OBB
         const dx = px - prefab.x;
         const dz = pz - prefab.z;
-
-        // Rotate point by -prefab.rotation
         const cos = Math.cos(-prefab.rotation);
         const sin = Math.sin(-prefab.rotation);
         const localX = dx * cos - dz * sin;
         const localZ = dx * sin + dz * cos;
 
-        // Find closest point in AABB (half-extents)
         const hW = def.width / 2;
         const hD = def.depth / 2;
-
         const closestX = Math.max(-hW, Math.min(hW, localX));
         const closestZ = Math.max(-hD, Math.min(hD, localZ));
 
-        // Distance from local circle center to closest point
         const distSq = (localX - closestX) ** 2 + (localZ - closestZ) ** 2;
         return distSq < radius * radius;
     }
 
-    /**
-     * Checks for the first intersection between a ray and physical obstacles.
-     */
     checkRayIntersection(startX, startZ, endX, endZ) {
         const dirX = endX - startX;
         const dirZ = endZ - startZ;
@@ -148,13 +150,10 @@ class WorldSystem {
         let closestHit = null;
         let minDist = length;
 
-        // Scan all relevant chunks along the ray
-        // For simplicity in a 10x10 map, we check all chunks for now, 
-        // but typically you'd traverse the grid.
         for (const chunk of this.grid.values()) {
             for (const p of chunk.prefabs) {
-                const def = this.config.prefabs[p.type];
-                if (!def.collision) continue;
+                const def = this.catalog.prefabs[p.type];
+                if (!def || !def.collision) continue;
 
                 const hitDist = this.intersectRayOBB(startX, startZ, unitX, unitZ, minDist, p, def);
                 if (hitDist !== null && hitDist < minDist) {
@@ -172,26 +171,22 @@ class WorldSystem {
     }
 
     intersectRayOBB(sx, sz, dx, dz, maxDist, p, def) {
-        // Ray to local space
         const lx = sx - p.x;
         const lz = sz - p.z;
-
         const cos = Math.cos(-p.rotation);
         const sin = Math.sin(-p.rotation);
-        
+
         const localSX = lx * cos - lz * sin;
         const localSZ = lx * sin + lz * cos;
         const localDX = dx * cos - dz * sin;
         const localDZ = dx * sin + dz * cos;
 
-        // AABB Ray Test
         const hW = def.width / 2;
         const hD = def.depth / 2;
 
         let tMin = -Infinity;
         let tMax = Infinity;
 
-        // Check X axis
         if (Math.abs(localDX) < 1e-6) {
             if (localSX < -hW || localSX > hW) return null;
         } else {
@@ -201,7 +196,6 @@ class WorldSystem {
             tMax = Math.min(tMax, Math.max(t1, t2));
         }
 
-        // Check Z axis
         if (Math.abs(localDZ) < 1e-6) {
             if (localSZ < -hD || localSZ > hD) return null;
         } else {
@@ -221,18 +215,39 @@ class WorldSystem {
         return this.grid.get(`${cx},${cz}`);
     }
 
+    getAreaAt(x, z) {
+        const chunk = this.getChunkAt(x, z);
+        if (!chunk || !chunk.areas) return null;
+
+        for (const area of chunk.areas) {
+            const dx = x - area.x;
+            const dz = z - area.z;
+            if ((dx * dx + dz * dz) <= (area.radius * area.radius)) return area;
+        }
+
+        return null;
+    }
+
+    getAreaTypeAt(x, z) {
+        const area = this.getAreaAt(x, z);
+        return area ? area.type : null;
+    }
+
     getSpeedMultiplier(x, z) {
         const chunk = this.getChunkAt(x, z);
         if (!chunk) return 1.0;
-        const biome = this.config.biomes[chunk.biome];
-        if (chunk.biome === 'ruins') return 0.8;
+        const biome = this.catalog.biomes[chunk.biome];
         return biome ? biome.speedMultiplier : 1.0;
     }
 
     getMapData() {
         return {
             grid: Object.fromEntries(this.grid),
-            config: this.config,
+            config: {
+                biomes: this.catalog.biomes,
+                prefabs: this.catalog.prefabs
+            },
+            regions: this.catalog.regions,
             chunkSize: this.chunkSize
         };
     }
@@ -246,10 +261,10 @@ class WorldSystem {
         let closest = null;
         let minDist = radius;
 
-        chunk.prefabs.forEach(p => {
-            const def = this.config.prefabs[p.type];
+        chunk.prefabs.forEach((p) => {
+            const def = this.catalog.prefabs[p.type];
             if (def && def.searchable) {
-                const dist = Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(z - p.z, 2));
+                const dist = Math.sqrt((x - p.x) ** 2 + (z - p.z) ** 2);
                 if (dist < minDist) {
                     minDist = dist;
                     closest = p;

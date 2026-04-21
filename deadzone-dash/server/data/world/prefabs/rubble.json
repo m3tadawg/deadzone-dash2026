@@ -1,0 +1,8 @@
+{
+  "id": "rubble",
+  "width": 3,
+  "height": 1,
+  "depth": 3,
+  "color": "#505050",
+  "collision": true
+}

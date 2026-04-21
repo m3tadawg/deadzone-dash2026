@@ -1,77 +1,140 @@
 {
-    "biomes": {
-        "desert": {
-            "groundColor": "#c2a36b",
-            "fogColor": "#c2a36b",
-            "speedMultiplier": 1.0,
-            "probability": 0.7
-        },
-        "graveyard": {
-            "groundColor": "#4a4a4a",
-            "fogColor": "#222222",
-            "speedMultiplier": 0.7,
-            "probability": 0.1,
-            "guaranteedCount": 1
-        },
-        "ruins": {
-            "groundColor": "#6e6e6e",
-            "fogColor": "#444444",
-            "speedMultiplier": 0.9,
-            "probability": 0.2,
-            "guaranteedCount": 2
-        }
+  "biomes": {
+    "desert": {
+      "groundColor": "#c2a36b",
+      "fogColor": "#c2a36b",
+      "speedMultiplier": 1.0,
+      "probability": 0.42,
+      "guaranteedCount": 1
     },
-    "prefabs": {
-        "wall": {
-            "width": 10,
-            "height": 4,
-            "depth": 2,
-            "color": "#404040",
-            "collision": true
-        },
-        "grave": {
-            "width": 1.5,
-            "height": 2,
-            "depth": 0.5,
-            "color": "#7a7a7a",
-            "collision": true
-        },
-        "crate": {
-            "width": 2,
-            "height": 2,
-            "depth": 2,
-            "color": "#4a2a1a",
-            "collision": true
-        },
-        "car": {
-            "width": 6,
-            "height": 2.5,
-            "depth": 3,
-            "color": "#2a3a5a",
-            "collision": true,
-            "searchable": true
-        },
-        "vending": {
-            "width": 2.5,
-            "height": 5,
-            "depth": 2.5,
-            "color": "#800000",
-            "collision": true,
-            "searchable": true
-        },
-        "barrel": {
-            "width": 1.2,
-            "height": 2,
-            "depth": 1.2,
-            "color": "#304030",
-            "collision": true
-        },
-        "rubble": {
-            "width": 3,
-            "height": 1,
-            "depth": 3,
-            "color": "#505050",
-            "collision": true
-        }
+    "graveyard": {
+      "groundColor": "#4a4a4a",
+      "fogColor": "#222222",
+      "speedMultiplier": 0.7,
+      "probability": 0.1,
+      "guaranteedCount": 2
+    },
+    "ruins": {
+      "groundColor": "#6e6e6e",
+      "fogColor": "#444444",
+      "speedMultiplier": 0.9,
+      "probability": 0.2,
+      "guaranteedCount": 2
+    },
+    "forest": {
+      "groundColor": "#44633f",
+      "fogColor": "#2e402b",
+      "speedMultiplier": 0.95,
+      "probability": 0.15,
+      "guaranteedCount": 2
+    },
+    "town": {
+      "groundColor": "#7a746a",
+      "fogColor": "#57524c",
+      "speedMultiplier": 0.85,
+      "probability": 0.13,
+      "guaranteedCount": 2
     }
+  },
+  "biomePrefabPools": {
+    "desert": ["crate", "barrel", "rubble"],
+    "graveyard": ["grave", "grave", "rubble", "crate", "mausoleum"],
+    "ruins": ["wall", "car", "vending", "barrel", "crate", "rubble"],
+    "forest": ["tree", "tree", "rubble", "crate"],
+    "town": ["building_shell", "building_shell", "building_door", "car", "vending", "wall", "crate"]
+  },
+  "biomePrefabDensity": {
+    "desert": { "min": 5, "max": 9 },
+    "graveyard": { "min": 12, "max": 18 },
+    "ruins": { "min": 12, "max": 20 },
+    "forest": { "min": 8, "max": 14 },
+    "town": { "min": 10, "max": 16 }
+  },
+  "prefabs": {
+    "wall": {
+      "width": 10,
+      "height": 4,
+      "depth": 2,
+      "color": "#404040",
+      "collision": true
+    },
+    "grave": {
+      "width": 1.5,
+      "height": 2,
+      "depth": 0.5,
+      "color": "#7a7a7a",
+      "collision": true
+    },
+    "crate": {
+      "width": 2,
+      "height": 2,
+      "depth": 2,
+      "color": "#4a2a1a",
+      "collision": true
+    },
+    "car": {
+      "width": 6,
+      "height": 2.5,
+      "depth": 3,
+      "color": "#2a3a5a",
+      "collision": true,
+      "searchable": true
+    },
+    "vending": {
+      "width": 2.5,
+      "height": 5,
+      "depth": 2.5,
+      "color": "#800000",
+      "collision": true,
+      "searchable": true
+    },
+    "barrel": {
+      "width": 1.2,
+      "height": 2,
+      "depth": 1.2,
+      "color": "#304030",
+      "collision": true
+    },
+    "rubble": {
+      "width": 3,
+      "height": 1,
+      "depth": 3,
+      "color": "#505050",
+      "collision": true
+    },
+    "tree": {
+      "width": 2.2,
+      "height": 7,
+      "depth": 2.2,
+      "color": "#2b4a2f",
+      "collision": true
+    },
+    "building_shell": {
+      "width": 14,
+      "height": 7,
+      "depth": 11,
+      "color": "#8a8173",
+      "collision": true,
+      "searchable": true,
+      "enterable": true
+    },
+    "building_door": {
+      "width": 2.8,
+      "height": 4,
+      "depth": 1,
+      "color": "#654321",
+      "collision": false,
+      "searchable": true,
+      "enterable": true
+    },
+    "mausoleum": {
+      "width": 8,
+      "height": 5,
+      "depth": 6,
+      "color": "#66615b",
+      "collision": true,
+      "searchable": true,
+      "enterable": true
+    }
+  }
 }

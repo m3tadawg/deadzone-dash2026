@@ -1,0 +1,8 @@
+{
+  "id": "graveyard",
+  "groundColor": "#4a4a4a",
+  "fogColor": "#222222",
+  "speedMultiplier": 0.7,
+  "probability": 0.10,
+  "guaranteedCount": 2
+}

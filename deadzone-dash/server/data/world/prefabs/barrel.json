@@ -1,0 +1,8 @@
+{
+  "id": "barrel",
+  "width": 1.2,
+  "height": 2,
+  "depth": 1.2,
+  "color": "#304030",
+  "collision": true
+}

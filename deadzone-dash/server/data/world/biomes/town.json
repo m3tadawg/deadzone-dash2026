@@ -1,0 +1,8 @@
+{
+  "id": "town",
+  "groundColor": "#7a746a",
+  "fogColor": "#57524c",
+  "speedMultiplier": 0.85,
+  "probability": 0.13,
+  "guaranteedCount": 2
+}

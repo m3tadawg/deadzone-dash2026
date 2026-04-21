@@ -1,0 +1,10 @@
+{
+  "id": "building_door",
+  "width": 2.8,
+  "height": 4,
+  "depth": 1,
+  "color": "#654321",
+  "collision": false,
+  "searchable": true,
+  "enterable": true
+}

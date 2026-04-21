@@ -1,0 +1,9 @@
+{
+  "id": "car",
+  "width": 6,
+  "height": 2.5,
+  "depth": 3,
+  "color": "#2a3a5a",
+  "collision": true,
+  "searchable": true
+}

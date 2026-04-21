@@ -154,7 +154,7 @@ setInterval(() => {
   const currentTime = Date.now();
 
   // === SPAWNER ===
-  AISpawner.update(currentTime, zombies);
+  AISpawner.update(currentTime, zombies, players);
 
   // === UPDATE PLAYERS ===
   Object.values(players).forEach(player => {
@@ -192,7 +192,7 @@ setInterval(() => {
     if (zombie.dead) return;
 
     // AI movement
-    AISystem.update(zombie, players);
+    AISystem.update(zombie, players, deltaTime);
 
     // Status effects
     StatusEffectSystem.update(zombie, deltaTime);

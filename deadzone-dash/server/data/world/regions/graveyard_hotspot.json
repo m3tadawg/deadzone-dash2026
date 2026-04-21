@@ -1,0 +1,8 @@
+{
+  "id": "graveyard_hotspot",
+  "sourceBiomes": ["graveyard"],
+  "triggerPrefabs": ["grave", "mausoleum"],
+  "radius": 12,
+  "spawnMultiplier": 2.5,
+  "lootMultiplier": 1.8
+}

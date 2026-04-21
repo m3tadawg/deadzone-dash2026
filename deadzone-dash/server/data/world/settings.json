@@ -1,0 +1,19 @@
+{
+  "chunkSize": 40,
+  "gridSize": 10,
+  "defaultBiome": "desert",
+  "biomePrefabPools": {
+    "desert": ["crate", "barrel", "rubble"],
+    "graveyard": ["grave", "grave", "rubble", "crate", "mausoleum"],
+    "ruins": ["wall", "car", "vending", "barrel", "crate", "rubble"],
+    "forest": ["tree", "tree", "rubble", "crate"],
+    "town": ["building_shell", "building_shell", "building_door", "car", "vending", "wall", "crate"]
+  },
+  "biomePrefabDensity": {
+    "desert": { "min": 5, "max": 9 },
+    "graveyard": { "min": 12, "max": 18 },
+    "ruins": { "min": 12, "max": 20 },
+    "forest": { "min": 8, "max": 14 },
+    "town": { "min": 10, "max": 16 }
+  }
+}
