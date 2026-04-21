@@ -23,9 +23,10 @@ class CombatSystem {
             const dirX = aimVec.x / aimLength;
             const dirZ = aimVec.z / aimLength;
             
-            // Adjust start somewhat forward offset
-            startX += dirX * 0.5;
-            startZ += dirZ * 0.5;
+            // Adjust start to match the weapon barrel offset (forward and to the right)
+            // Local forward is (dirX, dirZ). Local right is (-dirZ, dirX).
+            startX += dirX * 0.5 - dirZ * 0.6;
+            startZ += dirZ * 0.5 + dirX * 0.6;
 
             endX = player.x + dirX * weapon.range;
             endZ = player.z + dirZ * weapon.range;

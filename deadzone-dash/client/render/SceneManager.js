@@ -41,7 +41,7 @@ export class SceneManager {
      * Updates target positions and compute target rotations based on server snapshots.
      */
     sync(snapshot) {
-        const processEntity = (id, data, category, createMeshFn) => {
+        const processEntity = (id, data, category, createMeshFn, isPlayer) => {
             let mesh = category[id];
             if (!mesh) {
                 mesh = createMeshFn();
@@ -52,35 +52,50 @@ export class SceneManager {
             }
 
             const targetPos = new THREE.Vector3(data.x, 1, data.z);
-            let targetQuat = mesh.quaternion.clone();
+            let targetData = { position: targetPos, active: true, isPlayer };
 
-            if (data.aimX !== undefined && data.aimZ !== undefined) {
-                const aimPos = new THREE.Vector3(data.aimX, 1, data.aimZ);
-                if (aimPos.distanceToSquared(targetPos) > 0.001) {
-                    const lookAtMatrix = new THREE.Matrix4();
-                    lookAtMatrix.lookAt(targetPos, aimPos, new THREE.Vector3(0, 1, 0));
-                    targetQuat.setFromRotationMatrix(lookAtMatrix);
+            if (isPlayer) {
+                let gunQuat = mesh.getObjectByName("gunContainer").quaternion.clone();
+                if (data.aimX !== undefined && data.aimZ !== undefined) {
+                    const aimPos = new THREE.Vector3(data.aimX, 1, data.aimZ);
+                    if (aimPos.distanceToSquared(targetPos) > 0.001) {
+                        const lookAtMatrix = new THREE.Matrix4();
+                        lookAtMatrix.lookAt(targetPos, aimPos, new THREE.Vector3(0, 1, 0));
+                        gunQuat.setFromRotationMatrix(lookAtMatrix);
+                    }
                 }
+                targetData.gunQuat = gunQuat;
+
+                let bodyQuat = mesh.getObjectByName("bodyContainer").quaternion.clone();
+                if (data.vx !== undefined && data.vz !== undefined && (data.vx !== 0 || data.vz !== 0)) {
+                    const movePos = new THREE.Vector3(data.x + data.vx, 1, data.z + data.vz);
+                    const lookAtMatrix = new THREE.Matrix4();
+                    lookAtMatrix.lookAt(targetPos, movePos, new THREE.Vector3(0, 1, 0));
+                    bodyQuat.setFromRotationMatrix(lookAtMatrix);
+                }
+                targetData.bodyQuat = bodyQuat;
             } else {
-                // Calculate rotation if moving (fallback)
+                let targetQuat = mesh.quaternion.clone();
                 const direction = new THREE.Vector3().subVectors(targetPos, mesh.position);
                 direction.y = 0; // Keep horizontal
 
                 if (direction.lengthSq() > 0.001) {
                     const lookAtMatrix = new THREE.Matrix4();
-                    lookAtMatrix.lookAt(targetPos, mesh.position, new THREE.Vector3(0, 1, 0));
+                    const futurePos = mesh.position.clone().add(direction);
+                    lookAtMatrix.lookAt(mesh.position, futurePos, new THREE.Vector3(0, 1, 0));
                     targetQuat.setFromRotationMatrix(lookAtMatrix);
                 }
+                targetData.quaternion = targetQuat;
             }
 
-            this.targets.set(id, { position: targetPos, quaternion: targetQuat, active: true });
+            this.targets.set(id, targetData);
         };
 
         // Reset active status to cleanup disconnected players
         this.targets.forEach(t => t.active = false);
 
-        Object.entries(snapshot.players).forEach(([id, p]) => processEntity(id, p, this.playerMeshes, createPlayerMesh));
-        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, createZombieMesh));
+        Object.entries(snapshot.players).forEach(([id, p]) => processEntity(id, p, this.playerMeshes, createPlayerMesh, true));
+        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, createZombieMesh, false));
 
         // Cleanup stale meshes
         const cleanup = (meshes) => {
@@ -108,14 +123,26 @@ export class SceneManager {
         const LERP_SPEED = 10; // Speed of the catch-up
 
         this.targets.forEach((target, id) => {
-            const mesh = this.playerMeshes[id] || this.zombieMeshes[id];
+            const isPlayer = target.isPlayer;
+            const mesh = isPlayer ? this.playerMeshes[id] : this.zombieMeshes[id];
             if (!mesh) return;
 
             // Interpolate Position
             mesh.position.lerp(target.position, LERP_SPEED * dt);
 
             // Interpolate Rotation
-            mesh.quaternion.slerp(target.quaternion, LERP_SPEED * dt);
+            if (isPlayer) {
+                if (target.gunQuat) {
+                    mesh.getObjectByName("gunContainer").quaternion.slerp(target.gunQuat, LERP_SPEED * dt);
+                }
+                if (target.bodyQuat) {
+                    mesh.getObjectByName("bodyContainer").quaternion.slerp(target.bodyQuat, LERP_SPEED * dt);
+                }
+            } else {
+                if (target.quaternion) {
+                    mesh.quaternion.slerp(target.quaternion, LERP_SPEED * dt);
+                }
+            }
         });
 
         // Elastic Camera Follow
