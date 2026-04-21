@@ -57,11 +57,7 @@ function createZombie(id) {
   };
 }
 
-// Spawn some test zombies
-for (let i = 0; i < 5; i++) {
-  const id = "z_" + i;
-  zombies[id] = createZombie(id);
-}
+const AISpawner = require("./systems/AISpawner");
 
 // ======================
 // NETWORKING
@@ -130,6 +126,10 @@ const TICK_RATE = 50; // ms (20 ticks/sec)
 
 setInterval(() => {
   const deltaTime = TICK_RATE / 1000;
+  const currentTime = Date.now();
+
+  // === SPAWNER ===
+  AISpawner.update(currentTime, zombies);
 
   // === UPDATE PLAYERS ===
   Object.values(players).forEach(player => {

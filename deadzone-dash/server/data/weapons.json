@@ -5,7 +5,8 @@
     "damage": 50,
     "type": "melee",
     "fireRate": 400,
-    "range": 2
+    "range": 2,
+    "effects": ["bleeding"]
   },
   {
     "id": "pistol",
@@ -13,7 +14,8 @@
     "damage": 25,
     "type": "hitscan",
     "fireRate": 300,
-    "range": 30
+    "range": 30,
+    "effects": ["knockback"]
   },
   {
     "id": "shotgun",
@@ -21,7 +23,8 @@
     "damage": 100,
     "type": "hitscan",
     "fireRate": 800,
-    "range": 15
+    "range": 15,
+    "effects": ["knockback", "stun"]
   },
   {
     "id": "machine_gun",

@@ -1,6 +1,7 @@
 class CombatSystem {
     constructor(weaponsConfig) {
         this.weaponsConfig = weaponsConfig;
+        this.StatusEffectSystem = require("./StatusEffectSystem");
     }
 
     handleShoot(player, zombies) {
@@ -61,6 +62,12 @@ class CombatSystem {
                 if (hitZombie) {
                     hitZombie.health -= weapon.damage;
                     if (hitZombie.health <= 0) hitZombie.dead = true;
+                    
+                    if (weapon.effects) {
+                        weapon.effects.forEach(effectName => {
+                            this.StatusEffectSystem.applyEffect(hitZombie, { type: effectName, duration: 3 });
+                        });
+                    }
                     
                     // Cap tracer at zombie
                     endX = hitZombie.x;
