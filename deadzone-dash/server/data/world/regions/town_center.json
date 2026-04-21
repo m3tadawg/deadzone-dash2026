@@ -1,0 +1,8 @@
+{
+  "id": "town_center",
+  "sourceBiomes": ["town"],
+  "triggerPrefabs": ["building_shell"],
+  "radius": 14,
+  "spawnMultiplier": 1.5,
+  "lootMultiplier": 1.4
+}

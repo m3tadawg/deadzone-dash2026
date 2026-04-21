@@ -1,0 +1,8 @@
+{
+  "id": "desert",
+  "groundColor": "#c2a36b",
+  "fogColor": "#c2a36b",
+  "speedMultiplier": 1.0,
+  "probability": 0.42,
+  "guaranteedCount": 1
+}

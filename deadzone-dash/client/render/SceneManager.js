@@ -231,16 +231,15 @@ export class SceneManager {
     }
 
     getAimCoordinates(clientX, clientY) {
+        const rect = this.renderer.domElement.getBoundingClientRect();
         const mouse = new THREE.Vector2();
-        mouse.x = (clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, this.camera);
 
-        // Plane at the height of the gun barrel (y = 1.3) to fix isometric aiming parallax
-        // Player ground is y=1, gun is +0.3 above ground
-        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.3); 
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, target)) {
             return target;

@@ -1,0 +1,8 @@
+{
+  "id": "forest",
+  "groundColor": "#44633f",
+  "fogColor": "#2e402b",
+  "speedMultiplier": 0.95,
+  "probability": 0.15,
+  "guaranteedCount": 2
+}

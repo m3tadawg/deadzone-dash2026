@@ -1,0 +1,8 @@
+{
+  "id": "ruins",
+  "groundColor": "#6e6e6e",
+  "fogColor": "#444444",
+  "speedMultiplier": 0.9,
+  "probability": 0.20,
+  "guaranteedCount": 2
+}

@@ -48,6 +48,18 @@ export function createWorld(scene, mapData) {
                 case 'rubble':
                     model = buildRubble(prefabDef);
                     break;
+                case 'tree':
+                    model = buildTree(prefabDef);
+                    break;
+                case 'building_shell':
+                    model = buildBuildingShell(prefabDef);
+                    break;
+                case 'building_door':
+                    model = buildBuildingDoor(prefabDef);
+                    break;
+                case 'mausoleum':
+                    model = buildMausoleum(prefabDef);
+                    break;
                 default:
                     model = buildCrate(prefabDef);
                     break;
@@ -190,5 +202,79 @@ function buildRubble(def) {
         shard.castShadow = shard.receiveShadow = true;
         group.add(shard);
     }
+    return group;
+}
+
+function buildTree(def) {
+    const group = new THREE.Group();
+    const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(def.width * 0.18, def.width * 0.24, def.height * 0.45, 8),
+        new THREE.MeshStandardMaterial({ color: 0x5a3d23, roughness: 0.95 })
+    );
+    trunk.position.y = def.height * 0.22;
+    trunk.castShadow = trunk.receiveShadow = true;
+    group.add(trunk);
+
+    const canopy = new THREE.Mesh(
+        new THREE.SphereGeometry(def.width * 0.95, 10, 10),
+        new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.9 })
+    );
+    canopy.position.y = def.height * 0.72;
+    canopy.castShadow = canopy.receiveShadow = true;
+    group.add(canopy);
+
+    return group;
+}
+
+function buildBuildingShell(def) {
+    const group = new THREE.Group();
+    const shell = new THREE.Mesh(
+        new THREE.BoxGeometry(def.width, def.height, def.depth),
+        new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.9 })
+    );
+    shell.position.y = def.height / 2;
+    shell.castShadow = shell.receiveShadow = true;
+    group.add(shell);
+
+    const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(def.width * 1.06, def.height * 0.2, def.depth * 1.06),
+        new THREE.MeshStandardMaterial({ color: 0x3e3b37, roughness: 0.8 })
+    );
+    roof.position.y = def.height + def.height * 0.1;
+    roof.castShadow = roof.receiveShadow = true;
+    group.add(roof);
+
+    return group;
+}
+
+function buildBuildingDoor(def) {
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(def.width, def.height, def.depth),
+        new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.7, metalness: 0.1 })
+    );
+    mesh.position.y = def.height / 2;
+    mesh.castShadow = mesh.receiveShadow = true;
+    return mesh;
+}
+
+function buildMausoleum(def) {
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(
+        new THREE.BoxGeometry(def.width, def.height, def.depth),
+        new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.95 })
+    );
+    base.position.y = def.height / 2;
+    base.castShadow = base.receiveShadow = true;
+    group.add(base);
+
+    const pediment = new THREE.Mesh(
+        new THREE.ConeGeometry(def.width * 0.4, def.height * 0.45, 4),
+        new THREE.MeshStandardMaterial({ color: 0x4a4742, roughness: 0.85 })
+    );
+    pediment.position.y = def.height + def.height * 0.2;
+    pediment.rotation.y = Math.PI / 4;
+    pediment.castShadow = pediment.receiveShadow = true;
+    group.add(pediment);
+
     return group;
 }

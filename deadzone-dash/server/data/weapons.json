@@ -6,7 +6,9 @@
     "type": "melee",
     "fireRate": 400,
     "range": 2,
-    "effects": ["bleeding"]
+    "effects": [
+      "bleeding"
+    ]
   },
   {
     "id": "pistol",
@@ -15,7 +17,13 @@
     "type": "hitscan",
     "fireRate": 300,
     "range": 30,
-    "effects": ["knockback"]
+    "effects": [
+      "knockback"
+    ],
+    "muzzleOffset": {
+      "forward": 0.5,
+      "right": 0.0
+    }
   },
   {
     "id": "shotgun",
@@ -24,7 +32,14 @@
     "type": "hitscan",
     "fireRate": 800,
     "range": 15,
-    "effects": ["knockback", "stun"]
+    "effects": [
+      "knockback",
+      "stun"
+    ],
+    "muzzleOffset": {
+      "forward": 0.5,
+      "right": 0.0
+    }
   },
   {
     "id": "machine_gun",
@@ -32,7 +47,11 @@
     "damage": 15,
     "type": "hitscan",
     "fireRate": 100,
-    "range": 40
+    "range": 40,
+    "muzzleOffset": {
+      "forward": 0.5,
+      "right": 0.0
+    }
   },
   {
     "id": "rocket_launcher",
