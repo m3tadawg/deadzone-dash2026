@@ -26,7 +26,7 @@
             "width": 10,
             "height": 4,
             "depth": 2,
-            "color": "#606060",
+            "color": "#404040",
             "collision": true
         },
         "grave": {
@@ -71,7 +71,7 @@
             "height": 1,
             "depth": 3,
             "color": "#505050",
-            "collision": false
+            "collision": true
         }
     }
 }
