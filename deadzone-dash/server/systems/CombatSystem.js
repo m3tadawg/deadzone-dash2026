@@ -20,42 +20,52 @@ class CombatSystem {
         let endZ = player.z;
 
         if (aimLength > 0) {
-            const dirX = aimVec.x / aimLength;
-            const dirZ = aimVec.z / aimLength;
+            const centerDirX = aimVec.x / aimLength;
+            const centerDirZ = aimVec.z / aimLength;
             
             // Adjust start to match the weapon barrel offset (forward and to the right)
-            // Local forward is (dirX, dirZ). Local right is (-dirZ, dirX).
-            startX += dirX * 0.5 - dirZ * 0.6;
-            startZ += dirZ * 0.5 + dirX * 0.6;
+            // Local forward is (centerDirX, centerDirZ). Local right is (-centerDirZ, centerDirX).
+            startX += centerDirX * 0.5 - centerDirZ * 0.6;
+            startZ += centerDirZ * 0.5 + centerDirX * 0.6;
 
-            endX = player.x + dirX * weapon.range;
-            endZ = player.z + dirZ * weapon.range;
+            // Compute exact trajectory from the physical barrel through the mouse cursor
+            const bulletVecX = player.aimX - startX;
+            const bulletVecZ = player.aimZ - startZ;
+            const bulletLen = Math.sqrt(bulletVecX*bulletVecX + bulletVecZ*bulletVecZ);
 
-            let hitZombie = null;
-            let minTargetDist = weapon.range;
-            
-            Object.values(zombies).forEach(zombie => {
-                if (zombie.dead) return;
+            if (bulletLen > 0) {
+                const bDirX = bulletVecX / bulletLen;
+                const bDirZ = bulletVecZ / bulletLen;
+
+                endX = startX + bDirX * weapon.range;
+                endZ = startZ + bDirZ * weapon.range;
+
+                let hitZombie = null;
+                let minTargetDist = weapon.range;
                 
-                const zVec = { x: zombie.x - player.x, z: zombie.z - player.z };
-                const distT = (zVec.x * dirX) + (zVec.z * dirZ); // Dot product
-                
-                if (distT > 0 && distT < minTargetDist) { // In front and within range
-                    const distToRaySq = (zVec.x * zVec.x + zVec.z * zVec.z) - (distT * distT);
-                    if (distToRaySq < 1.0) { // Hit cylinder radius squared
-                        hitZombie = zombie;
-                        minTargetDist = distT;
+                Object.values(zombies).forEach(zombie => {
+                    if (zombie.dead) return;
+                    
+                    const zVec = { x: zombie.x - startX, z: zombie.z - startZ };
+                    const distT = (zVec.x * bDirX) + (zVec.z * bDirZ); // Dot product along the actual bullet path
+                    
+                    if (distT > 0 && distT < minTargetDist) { // In front of gun and within range
+                        const distToRaySq = (zVec.x * zVec.x + zVec.z * zVec.z) - (distT * distT);
+                        if (distToRaySq < 1.0) { // Hit cylinder radius squared
+                            hitZombie = zombie;
+                            minTargetDist = distT;
+                        }
                     }
-                }
-            });
-            
-            if (hitZombie) {
-                hitZombie.health -= weapon.damage;
-                if (hitZombie.health <= 0) hitZombie.dead = true;
+                });
                 
-                // Adjust tracer to end at the hit zombie
-                endX = hitZombie.x;
-                endZ = hitZombie.z;
+                if (hitZombie) {
+                    hitZombie.health -= weapon.damage;
+                    if (hitZombie.health <= 0) hitZombie.dead = true;
+                    
+                    // Cap tracer at zombie
+                    endX = hitZombie.x;
+                    endZ = hitZombie.z;
+                }
             }
         }
 

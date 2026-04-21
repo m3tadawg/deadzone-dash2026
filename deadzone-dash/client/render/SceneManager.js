@@ -172,7 +172,8 @@ export class SceneManager {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, this.camera);
 
-        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Ground plane at y=0
+        // Plane at the height of the gun barrel (y = 1.2) to fix isometric aiming parallax
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.2); 
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, target)) {
             return target;
@@ -183,8 +184,8 @@ export class SceneManager {
     addTracer(startX, startZ, endX, endZ) {
         const material = new THREE.LineBasicMaterial({ color: 0xffff00 });
         const points = [
-            new THREE.Vector3(startX, 1, startZ),
-            new THREE.Vector3(endX, 1, endZ)
+            new THREE.Vector3(startX, 1.2, startZ),
+            new THREE.Vector3(endX, 1.2, endZ)
         ];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);

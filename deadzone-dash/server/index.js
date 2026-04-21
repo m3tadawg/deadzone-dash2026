@@ -95,6 +95,12 @@ wss.on("connection", (ws) => {
         const player = players[id];
         if (!player || player.dead) return;
         
+        // Use attached aim payload to guarantee flawless sync
+        if (data.aimX !== undefined && data.aimZ !== undefined) {
+            player.aimX = data.aimX;
+            player.aimZ = data.aimZ;
+        }
+
         const result = combatSystem.handleShoot(player, zombies);
         if (result) {
             const tracerMsg = JSON.stringify({ type: "tracer", ...result });

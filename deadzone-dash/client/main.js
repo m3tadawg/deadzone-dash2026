@@ -36,6 +36,8 @@ window.addEventListener("keyup", (e) => {
 
 let aimTarget = null;
 let isMouseDown = false;
+let lastSentAimTime = 0;
+let lastShootTime = 0;
 
 window.addEventListener("mousemove", (e) => {
   if (sceneManager) {
@@ -74,10 +76,16 @@ function loop() {
     }
 
     if (aimTarget) {
-        socket.send(JSON.stringify({ type: "aim", x: aimTarget.x, z: aimTarget.z }));
+        if (currentTime - lastSentAimTime > 50) { // Max 20 times a second for aiming
+            socket.send(JSON.stringify({ type: "aim", x: aimTarget.x, z: aimTarget.z }));
+            lastSentAimTime = currentTime;
+        }
         
         if (isMouseDown) {
-            socket.send(JSON.stringify({ type: "shoot" }));
+            if (currentTime - lastShootTime > 50) { // Max 20 times a second for shooting network packets
+                socket.send(JSON.stringify({ type: "shoot", aimX: aimTarget.x, aimZ: aimTarget.z }));
+                lastShootTime = currentTime;
+            }
         }
     }
   }
