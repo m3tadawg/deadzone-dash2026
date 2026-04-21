@@ -9,6 +9,7 @@ const AISystem = require("./systems/AISystem");
 const CombatSystem = require("./systems/CombatSystem");
 const playerConfig = require("./data/player.json");
 const weaponsConfig = require("./data/weapons.json");
+const WorldSystem = require("./systems/WorldSystem");
 
 const app = express();
 const server = http.createServer(app);
@@ -69,7 +70,11 @@ wss.on("connection", (ws) => {
   players[id] = createPlayer(id);
 
   console.log("Player connected:", id);
-  ws.send(JSON.stringify({ type: "init", id }));
+  ws.send(JSON.stringify({ 
+    type: "init", 
+    id,
+    map: WorldSystem.getMapData()
+  }));
 
   ws.on("message", (msg) => {
     try {
@@ -78,6 +83,15 @@ wss.on("connection", (ws) => {
       if (data.type === "move") {
         const player = players[id];
         if (!player || player.dead) return;
+
+        // Searching logic
+        if (player.isSearching && player.searchTarget) {
+            const dist = Math.sqrt(Math.pow(player.x - player.searchTarget.x, 2) + Math.pow(player.z - player.searchTarget.z, 2));
+            if (dist > 4.0 || data.dx !== 0 || data.dz !== 0) {
+                player.isSearching = false;
+                player.searchTarget = null;
+            }
+        }
 
         // Store the movement direction (velocity) instead of instantly teleporting
         player.vx = data.dx;
@@ -91,7 +105,6 @@ wss.on("connection", (ws) => {
         const player = players[id];
         if (!player || player.dead) return;
         
-        // Use attached aim payload to guarantee flawless sync
         if (data.aimX !== undefined && data.aimZ !== undefined) {
             player.aimX = data.aimX;
             player.aimZ = data.aimZ;
@@ -105,6 +118,18 @@ wss.on("connection", (ws) => {
                     client.send(tracerMsg);
                 }
             });
+        }
+      } else if (data.type === "searchStart") {
+        const player = players[id];
+        if (!player || player.dead) return;
+        player.isSearching = true;
+        player.searchTarget = WorldSystem.getNearbySearchable(player.x, player.z, 3.0);
+        player.searchStartTime = Date.now();
+      } else if (data.type === "searchEnd") {
+        const player = players[id];
+        if (player) {
+            player.isSearching = false;
+            player.searchTarget = null;
         }
       }
     } catch (e) {
@@ -140,8 +165,22 @@ setInterval(() => {
       // Normalize to prevent faster diagonal movement
       const length = Math.sqrt(player.vx * player.vx + player.vz * player.vz);
       if (length > 0) {
-        player.x += (player.vx / length) * playerConfig.baseSpeed * deltaTime;
-        player.z += (player.vz / length) * playerConfig.baseSpeed * deltaTime;
+        const speedMultiplier = WorldSystem.getSpeedMultiplier(player.x, player.z);
+        const nextX = player.x + (player.vx / length) * (playerConfig.baseSpeed * speedMultiplier) * deltaTime;
+        const nextZ = player.z + (player.vz / length) * (playerConfig.baseSpeed * speedMultiplier) * deltaTime;
+        
+        // Circular collider check (radius 0.8)
+        if (!WorldSystem.isPositionBlocked(nextX, nextZ, 0.8)) {
+            player.x = nextX;
+            player.z = nextZ;
+        } else {
+            // Sliding logic: try moving only in X or only in Z
+            if (!WorldSystem.isPositionBlocked(nextX, player.z, 0.8)) {
+                player.x = nextX;
+            } else if (!WorldSystem.isPositionBlocked(player.x, nextZ, 0.8)) {
+                player.z = nextZ;
+            }
+        }
       }
     }
 

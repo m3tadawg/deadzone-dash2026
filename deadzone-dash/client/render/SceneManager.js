@@ -22,15 +22,27 @@ export class SceneManager {
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(this.renderer.domElement);
 
         // Lighting
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(20, 50, 20);
-        this.scene.add(light);
+        const hemiLight = new THREE.HemisphereLight(0x443333, 0x222222, 0.6);
+        this.scene.add(hemiLight);
 
-        const ambient = new THREE.AmbientLight(0x888888);
-        this.scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(40, 80, 40);
+        dirLight.castShadow = true;
+        
+        // Shadow config
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
+        dirLight.shadow.bias = -0.0005;
+        this.scene.add(dirLight);
 
         // World
         createWorld(this.scene);
@@ -59,6 +71,13 @@ export class SceneManager {
 
     setLocalPlayer(id) {
         this.localPlayerId = id;
+    }
+
+    initWorld(mapData) {
+        this.mapData = mapData;
+        import("./World.js").then(module => {
+            module.createWorld(this.scene, this.mapData);
+        });
     }
 
     /**
@@ -178,7 +197,7 @@ export class SceneManager {
             }
         });
 
-        // Elastic Camera Follow
+        // Elastic Camera Follow & Biome Effects
         if (this.localPlayerId) {
             const localMesh = this.playerMeshes[this.localPlayerId];
             if (localMesh) {
@@ -189,6 +208,20 @@ export class SceneManager {
                 // Lerp the camera position directly to give that elastic floating effect
                 const CAM_LERP_SPEED = 3.5; 
                 this.camera.position.lerp(targetCamPos, CAM_LERP_SPEED * dt);
+
+                // Biome Fog Update
+                if (this.mapData) {
+                    const cx = Math.floor(localMesh.position.x / this.mapData.chunkSize);
+                    const cz = Math.floor(localMesh.position.z / this.mapData.chunkSize);
+                    const chunk = this.mapData.grid[`${cx},${cz}`];
+                    if (chunk) {
+                        const biome = this.mapData.config.biomes[chunk.biome];
+                        const targetColor = new THREE.Color(biome.fogColor);
+                        if (this.scene.fog) {
+                            this.scene.fog.color.lerp(targetColor, 0.05); // Smooth transition
+                        }
+                    }
+                }
             }
         }
     }
@@ -231,5 +264,25 @@ export class SceneManager {
             geometry.dispose();
             material.dispose();
         }, 100);
+    }
+
+    checkNearbySearchable(x, z, radius) {
+        if (!this.mapData) return false;
+        
+        // Find the current chunk
+        const cx = Math.floor(x / this.mapData.chunkSize);
+        const cz = Math.floor(z / this.mapData.chunkSize);
+        const chunk = this.mapData.grid[`${cx},${cz}`];
+        if (!chunk) return false;
+
+        const prefabDefs = this.mapData.config.prefabs;
+        return chunk.prefabs.some(p => {
+            const def = prefabDefs[p.type];
+            if (def && def.searchable) {
+                const dist = Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(z - p.z, 2));
+                return dist < radius;
+            }
+            return false;
+        });
     }
 }

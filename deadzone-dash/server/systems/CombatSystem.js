@@ -34,7 +34,7 @@ class CombatSystem {
             const bulletVecZ = player.aimZ - startZ;
             const bulletLen = Math.sqrt(bulletVecX*bulletVecX + bulletVecZ*bulletVecZ);
 
-            if (bulletLen > 0) {
+        if (bulletLen > 0) {
                 const bDirX = bulletVecX / bulletLen;
                 const bDirZ = bulletVecZ / bulletLen;
 
@@ -43,14 +43,24 @@ class CombatSystem {
 
                 let hitZombie = null;
                 let minTargetDist = weapon.range;
+
+                // 1. Check World Obstacle Collisions first
+                const WorldSystem = require("./WorldSystem");
+                const worldHit = WorldSystem.checkRayIntersection(startX, startZ, endX, endZ);
+                if (worldHit) {
+                    minTargetDist = worldHit.dist;
+                    endX = worldHit.x;
+                    endZ = worldHit.z;
+                }
                 
+                // 2. Check Zombie Hist
                 Object.values(zombies).forEach(zombie => {
                     if (zombie.dead) return;
                     
                     const zVec = { x: zombie.x - startX, z: zombie.z - startZ };
                     const distT = (zVec.x * bDirX) + (zVec.z * bDirZ); // Dot product along the actual bullet path
                     
-                    if (distT > 0 && distT < minTargetDist) { // In front of gun and within range
+                    if (distT > 0 && distT < minTargetDist) { // In front of gun and within range (or blocked by wall)
                         const distToRaySq = (zVec.x * zVec.x + zVec.z * zVec.z) - (distT * distT);
                         if (distToRaySq < 1.0) { // Hit cylinder radius squared
                             hitZombie = zombie;

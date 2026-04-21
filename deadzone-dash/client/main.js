@@ -11,27 +11,43 @@ socket.onmessage = (msg) => {
   const data = JSON.parse(msg.data);
   if (data.type === "init") {
     sceneManager.setLocalPlayer(data.id);
+    if (data.map) {
+      sceneManager.initWorld(data.map);
+    }
   } else if (data.type === "snapshot") {
     latestSnapshot = data;
     snapshotChanged = true;
   } else if (data.type === "tracer") {
     sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ);
+  } else if (data.type === "notification") {
+    document.getElementById("notifications").innerText = data.text;
+    setTimeout(() => { document.getElementById("notifications").innerText = ""; }, 3000);
   }
 };
 
 // Input State
-const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
+const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, e: false };
 let lastSentDx = 0;
 let lastSentDz = 0;
 
 window.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
-  if (keys.hasOwnProperty(key)) keys[key] = true;
+  if (keys.hasOwnProperty(key)) {
+      if (key === 'e' && !keys.e && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "searchStart" }));
+      }
+      keys[key] = true;
+  }
 });
 
 window.addEventListener("keyup", (e) => {
   const key = e.key.toLowerCase();
-  if (keys.hasOwnProperty(key)) keys[key] = false;
+  if (keys.hasOwnProperty(key)) {
+      if (key === 'e' && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "searchEnd" }));
+      }
+      keys[key] = false;
+  }
 });
 
 let aimTarget = null;
@@ -93,6 +109,12 @@ function loop() {
   if (latestSnapshot) {
     if (snapshotChanged) {
         sceneManager.sync(latestSnapshot);
+        // Check for nearby searchable objects to show UI prompt
+        const localPlayer = latestSnapshot.players[sceneManager.localPlayerId];
+        if (localPlayer) {
+            const hasSearchable = sceneManager.checkNearbySearchable(localPlayer.x, localPlayer.z, 3.0);
+            document.getElementById("hud").style.display = hasSearchable ? "block" : "none";
+        }
         snapshotChanged = false;
     }
     sceneManager.update(dt);

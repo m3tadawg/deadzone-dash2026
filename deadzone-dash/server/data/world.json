@@ -1,0 +1,77 @@
+{
+    "biomes": {
+        "desert": {
+            "groundColor": "#c2a36b",
+            "fogColor": "#c2a36b",
+            "speedMultiplier": 1.0,
+            "probability": 0.7
+        },
+        "graveyard": {
+            "groundColor": "#4a4a4a",
+            "fogColor": "#222222",
+            "speedMultiplier": 0.7,
+            "probability": 0.1,
+            "guaranteedCount": 1
+        },
+        "ruins": {
+            "groundColor": "#6e6e6e",
+            "fogColor": "#444444",
+            "speedMultiplier": 0.9,
+            "probability": 0.2,
+            "guaranteedCount": 2
+        }
+    },
+    "prefabs": {
+        "wall": {
+            "width": 10,
+            "height": 4,
+            "depth": 2,
+            "color": "#606060",
+            "collision": true
+        },
+        "grave": {
+            "width": 1.5,
+            "height": 2,
+            "depth": 0.5,
+            "color": "#7a7a7a",
+            "collision": true
+        },
+        "crate": {
+            "width": 2,
+            "height": 2,
+            "depth": 2,
+            "color": "#4a2a1a",
+            "collision": true
+        },
+        "car": {
+            "width": 6,
+            "height": 2.5,
+            "depth": 3,
+            "color": "#2a3a5a",
+            "collision": true,
+            "searchable": true
+        },
+        "vending": {
+            "width": 2.5,
+            "height": 5,
+            "depth": 2.5,
+            "color": "#800000",
+            "collision": true,
+            "searchable": true
+        },
+        "barrel": {
+            "width": 1.2,
+            "height": 2,
+            "depth": 1.2,
+            "color": "#304030",
+            "collision": true
+        },
+        "rubble": {
+            "width": 3,
+            "height": 1,
+            "depth": 3,
+            "color": "#505050",
+            "collision": false
+        }
+    }
+}
