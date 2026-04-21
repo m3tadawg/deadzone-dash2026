@@ -1,7 +1,18 @@
 import * as THREE from "three";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
-import { createPlayerMesh, createZombieMesh } from "./Entities.js";
+import { createPlayerMesh, createZombieMesh, applyPlayerCustomization } from "./Entities.js";
+
+const PLAYER_COLORS = [
+    0x3498db, // Blue
+    0xe74c3c, // Red
+    0x2ecc71, // Green
+    0xf1c40f, // Yellow
+    0x9b59b6, // Purple
+    0xe67e22, // Orange
+    0x1abc9c, // Teal
+    0xecf0f1  // White
+];
 
 export class SceneManager {
     constructor() {
@@ -31,6 +42,19 @@ export class SceneManager {
         // Target data for interpolation
         this.targets = new Map();
         this.localPlayerId = null;
+
+        window.addEventListener("resize", () => this.handleResize());
+    }
+
+    handleResize() {
+        const aspect = window.innerWidth / window.innerHeight;
+        const frustumSize = 35;
+        this.camera.left = -frustumSize * aspect / 2;
+        this.camera.right = frustumSize * aspect / 2;
+        this.camera.top = frustumSize / 2;
+        this.camera.bottom = -frustumSize / 2;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     setLocalPlayer(id) {
@@ -49,6 +73,15 @@ export class SceneManager {
                 this.scene.add(mesh);
                 // Initial jump to position
                 mesh.position.set(data.x, 1, data.z);
+
+                if (isPlayer) {
+                    // Assign deterministic color based on ID
+                    const colorIndex = Math.abs(id.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0)) % PLAYER_COLORS.length;
+                    applyPlayerCustomization(mesh, {
+                        torsoColor: PLAYER_COLORS[colorIndex],
+                        skinColor: 0xffdbac
+                    });
+                }
             }
 
             const targetPos = new THREE.Vector3(data.x, 1, data.z);
@@ -150,7 +183,7 @@ export class SceneManager {
             const localMesh = this.playerMeshes[this.localPlayerId];
             if (localMesh) {
                 // Fixed overhead isometric-style offset
-                const CAMERA_OFFSET = new THREE.Vector3(0, 30, 30);
+                const CAMERA_OFFSET = new THREE.Vector3(0, 35, 35);
                 const targetCamPos = localMesh.position.clone().add(CAMERA_OFFSET);
                 
                 // Lerp the camera position directly to give that elastic floating effect
@@ -172,8 +205,9 @@ export class SceneManager {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, this.camera);
 
-        // Plane at the height of the gun barrel (y = 1.2) to fix isometric aiming parallax
-        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.2); 
+        // Plane at the height of the gun barrel (y = 1.3) to fix isometric aiming parallax
+        // Player ground is y=1, gun is +0.3 above ground
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.3); 
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, target)) {
             return target;
@@ -184,8 +218,8 @@ export class SceneManager {
     addTracer(startX, startZ, endX, endZ) {
         const material = new THREE.LineBasicMaterial({ color: 0xffff00 });
         const points = [
-            new THREE.Vector3(startX, 1.2, startZ),
-            new THREE.Vector3(endX, 1.2, endZ)
+            new THREE.Vector3(startX, 1.3, startZ),
+            new THREE.Vector3(endX, 1.3, endZ)
         ];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);

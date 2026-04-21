@@ -26,8 +26,8 @@ class CombatSystem {
             
             // Adjust start to match the weapon barrel offset (forward and to the right)
             // Local forward is (centerDirX, centerDirZ). Local right is (-centerDirZ, centerDirX).
-            startX += centerDirX * 0.5 - centerDirZ * 0.6;
-            startZ += centerDirZ * 0.5 + centerDirX * 0.6;
+            startX += centerDirX * 0.5 - centerDirZ * 0.8;
+            startZ += centerDirZ * 0.5 + centerDirX * 0.8;
 
             // Compute exact trajectory from the physical barrel through the mouse cursor
             const bulletVecX = player.aimX - startX;
