@@ -1,0 +1,12 @@
+[
+  {
+    "type": "shambler",
+    "hp": 50,
+    "speed": 0.5
+  },
+  {
+    "type": "runner",
+    "hp": 30,
+    "speed": 1.2
+  }
+]

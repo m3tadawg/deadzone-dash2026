@@ -1,0 +1,16 @@
+[
+    {
+        "type": "damageBoost",
+        "duration": 30,
+        "modifiers": {
+            "outgoingDamage": 1.5
+        }
+    },
+    {
+        "type": "speedBoost",
+        "duration": 20,
+        "modifiers": {
+            "movementSpeed": 1.3
+        }
+    }
+]

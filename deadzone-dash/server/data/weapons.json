@@ -1,0 +1,58 @@
+[
+  {
+    "id": "knife",
+    "name": "Knife",
+    "damage": 50,
+    "type": "melee",
+    "fireRate": 400,
+    "range": 2
+  },
+  {
+    "id": "pistol",
+    "name": "Pistol",
+    "damage": 25,
+    "type": "hitscan",
+    "fireRate": 300,
+    "range": 30
+  },
+  {
+    "id": "shotgun",
+    "name": "Shotgun",
+    "damage": 100,
+    "type": "hitscan",
+    "fireRate": 800,
+    "range": 15
+  },
+  {
+    "id": "machine_gun",
+    "name": "Machine Gun",
+    "damage": 15,
+    "type": "hitscan",
+    "fireRate": 100,
+    "range": 40
+  },
+  {
+    "id": "rocket_launcher",
+    "name": "Rocket Launcher",
+    "damage": 200,
+    "type": "projectile",
+    "fireRate": 1500,
+    "range": 60
+  },
+  {
+    "id": "molotov",
+    "name": "Molotov",
+    "damage": 10,
+    "type": "thrown",
+    "fireRate": 1000,
+    "range": 20
+  },
+  {
+    "id": "grenade",
+    "name": "Grenade",
+    "damage": 150,
+    "type": "thrown",
+    "fireRate": 1000,
+    "range": 25
+  }
+]
