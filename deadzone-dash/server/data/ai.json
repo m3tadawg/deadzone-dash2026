@@ -5,6 +5,20 @@
     "arrivalDistance": 0.25,
     "steerAnglesDeg": [0, -35, 35, -70, 70, 180],
     "steerProbeDistance": 1.2,
-    "blockedCooldownMs": 600
+    "blockedCooldownMs": 600,
+    "sidestepAnglesDeg": [-90, 90, 150, -150],
+    "sidestepProbeDistance": 1.8,
+    "maxStuckTimeMs": 800,
+    "defaultProfile": {
+      "radius": 0.75,
+      "arrivalDistance": 0.25,
+      "steerAnglesDeg": [0, -35, 35, -70, 70, 180],
+      "steerProbeDistance": 1.2,
+      "blockedCooldownMs": 600,
+      "sidestepAnglesDeg": [-90, 90, 150, -150],
+      "sidestepProbeDistance": 1.8,
+      "maxStuckTimeMs": 800,
+      "speedMultiplier": 1
+    }
   }
 }
