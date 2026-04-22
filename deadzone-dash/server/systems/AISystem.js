@@ -7,6 +7,8 @@ const zombieTypeByName = zombieTypes.reduce((acc, def) => {
   return acc;
 }, {});
 
+const profileCache = {};
+
 function pickClosestTarget(zombie, players) {
   let target = null;
   let minDistSq = Infinity;
@@ -35,11 +37,13 @@ function rotate2D(x, z, radians) {
 }
 
 function getBehaviorProfile(zombie) {
+  if (profileCache[zombie.type]) return profileCache[zombie.type];
+
   const defaultProfile = aiConfig.defaultProfile || {};
   const typeDef = zombieTypeByName[zombie.type] || {};
   const typeProfile = typeDef.aiProfile || {};
 
-  return {
+  const profile = {
     radius: typeProfile.radius ?? defaultProfile.radius ?? aiConfig.radius,
     arrivalDistance: typeProfile.arrivalDistance ?? defaultProfile.arrivalDistance ?? aiConfig.arrivalDistance,
     steerAnglesDeg: typeProfile.steerAnglesDeg ?? defaultProfile.steerAnglesDeg ?? aiConfig.steerAnglesDeg,
@@ -50,6 +54,9 @@ function getBehaviorProfile(zombie) {
     maxStuckTimeMs: typeProfile.maxStuckTimeMs ?? defaultProfile.maxStuckTimeMs ?? aiConfig.maxStuckTimeMs,
     speedMultiplier: typeProfile.speedMultiplier ?? defaultProfile.speedMultiplier ?? 1
   };
+
+  profileCache[zombie.type] = profile;
+  return profile;
 }
 
 function pickSteeringDirection(zombie, desiredDirX, desiredDirZ, profile, probeDistance) {
@@ -110,6 +117,7 @@ function applyMovementWithSlide(zombie, direction, speed, deltaTime, radius) {
 }
 
 module.exports = {
+  getBehaviorProfile,
   update(zombie, players, deltaTime) {
     const target = pickClosestTarget(zombie, players);
     if (!target) {
@@ -119,6 +127,14 @@ module.exports = {
     }
 
     const profile = getBehaviorProfile(zombie);
+
+    if (zombie.blockedCooldownRemaining > 0) {
+      zombie.blockedCooldownRemaining -= deltaTime * 1000;
+      zombie.vx = 0;
+      zombie.vz = 0;
+      updateStuckTimer(zombie, deltaTime, false);
+      return;
+    }
 
     const dx = target.x - zombie.x;
     const dz = target.z - zombie.z;
@@ -151,14 +167,7 @@ module.exports = {
     }
 
     if (!chosenDir) {
-      zombie.blockedUntil = Date.now() + profile.blockedCooldownMs;
-      zombie.vx = 0;
-      zombie.vz = 0;
-      updateStuckTimer(zombie, deltaTime, false);
-      return;
-    }
-
-    if (zombie.blockedUntil && Date.now() < zombie.blockedUntil) {
+      zombie.blockedCooldownRemaining = profile.blockedCooldownMs;
       zombie.vx = 0;
       zombie.vz = 0;
       updateStuckTimer(zombie, deltaTime, false);

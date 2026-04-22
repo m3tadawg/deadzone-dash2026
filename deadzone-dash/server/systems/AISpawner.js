@@ -2,9 +2,10 @@ const spawnerConfig = require('../data/spawner.json');
 const aiConfig = require('../data/ai.json').zombie;
 const zombieTypes = require('../data/zombies.json');
 const WorldSystem = require('./WorldSystem');
+const AISystem = require('./AISystem');
 
 function pickZombieType() {
-    const totalWeight = zombieTypes.reduce((sum, typeDef) => sum + (typeDef.spawnWeight || 1), 0);
+    const totalWeight = zombieTypes.reduce((sum, typeDef) => sum + (typeDef.spawnWeight ?? 1), 0);
 
     if (totalWeight <= 0) {
         return zombieTypes[0] || { type: 'shambler', hp: 50 };
@@ -13,7 +14,7 @@ function pickZombieType() {
     let roll = Math.random() * totalWeight;
 
     for (const typeDef of zombieTypes) {
-        roll -= (typeDef.spawnWeight || 1);
+        roll -= (typeDef.spawnWeight ?? 1);
         if (roll <= 0) {
             return typeDef;
         }
@@ -40,6 +41,9 @@ const AISpawner = {
         this.zombieCounter++;
         const id = `z_${this.zombieCounter}`;
 
+        const typeDef = pickZombieType();
+        const profile = AISystem.getBehaviorProfile({ type: typeDef.type });
+
         const playerList = Object.values(players).filter((p) => !p.dead);
         const anchor = playerList.length > 0 ? playerList[Math.floor(Math.random() * playerList.length)] : { x: 0, z: 0 };
 
@@ -53,7 +57,7 @@ const AISpawner = {
             const candidateX = anchor.x + Math.cos(angle) * radius;
             const candidateZ = anchor.z + Math.sin(angle) * radius;
 
-            if (WorldSystem.isPositionBlocked(candidateX, candidateZ, aiConfig.radius)) continue;
+            if (WorldSystem.isPositionBlocked(candidateX, candidateZ, profile.radius)) continue;
 
             const chunk = WorldSystem.getChunkAt(candidateX, candidateZ);
             if (!chunk) continue;
@@ -72,8 +76,6 @@ const AISpawner = {
                 break;
             }
         }
-
-        const typeDef = pickZombieType();
 
         zombies[id] = {
             id,
