@@ -1,5 +1,26 @@
 const spawnerConfig = require('../data/spawner.json');
+const aiConfig = require('../data/ai.json').zombie;
+const zombieTypes = require('../data/zombies.json');
 const WorldSystem = require('./WorldSystem');
+
+function pickZombieType() {
+    const totalWeight = zombieTypes.reduce((sum, typeDef) => sum + (typeDef.spawnWeight || 1), 0);
+
+    if (totalWeight <= 0) {
+        return zombieTypes[0] || { type: 'shambler', hp: 50 };
+    }
+
+    let roll = Math.random() * totalWeight;
+
+    for (const typeDef of zombieTypes) {
+        roll -= (typeDef.spawnWeight || 1);
+        if (roll <= 0) {
+            return typeDef;
+        }
+    }
+
+    return zombieTypes[zombieTypes.length - 1] || { type: 'shambler', hp: 50 };
+}
 
 const AISpawner = {
     lastSpawnTime: 0,
@@ -32,7 +53,7 @@ const AISpawner = {
             const candidateX = anchor.x + Math.cos(angle) * radius;
             const candidateZ = anchor.z + Math.sin(angle) * radius;
 
-            if (WorldSystem.isPositionBlocked(candidateX, candidateZ, 0.75)) continue;
+            if (WorldSystem.isPositionBlocked(candidateX, candidateZ, aiConfig.radius)) continue;
 
             const chunk = WorldSystem.getChunkAt(candidateX, candidateZ);
             if (!chunk) continue;
@@ -52,12 +73,14 @@ const AISpawner = {
             }
         }
 
+        const typeDef = pickZombieType();
+
         zombies[id] = {
             id,
-            type: 'shambler',
+            type: typeDef.type,
             x: spawnX,
             z: spawnZ,
-            health: config.baseHealth,
+            health: typeDef.hp,
             dead: false,
             statusEffects: [],
             tags: ['enemy', 'undead']

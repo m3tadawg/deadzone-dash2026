@@ -2,11 +2,25 @@
   {
     "type": "shambler",
     "hp": 50,
-    "speed": 0.5
+    "speed": 0.5,
+    "spawnWeight": 0.7,
+    "aiProfile": {
+      "speedMultiplier": 0.95,
+      "steerProbeDistance": 1.05,
+      "maxStuckTimeMs": 1000
+    }
   },
   {
     "type": "runner",
     "hp": 30,
-    "speed": 1.2
+    "speed": 1.2,
+    "spawnWeight": 0.3,
+    "aiProfile": {
+      "speedMultiplier": 1.25,
+      "arrivalDistance": 0.35,
+      "steerProbeDistance": 1.45,
+      "blockedCooldownMs": 400,
+      "maxStuckTimeMs": 600
+    }
   }
 ]
