@@ -279,11 +279,28 @@ export class SceneManager {
         return null;
     }
 
-    addTracer(startX, startZ, endX, endZ) {
+    getWeaponMuzzleWorldPosition(playerId) {
+        if (!playerId) return null;
+
+        const playerMesh = this.playerMeshes[playerId];
+        if (!playerMesh) return null;
+
+        const gunContainer = playerMesh.getObjectByName("gunContainer");
+        const weaponModel = gunContainer?.getObjectByName("weaponModel");
+        if (!weaponModel) return null;
+
+        const muzzle = weaponModel.userData?.muzzleLocal || { x: 0, y: 0, z: -0.8 };
+        return weaponModel.localToWorld(new THREE.Vector3(muzzle.x, muzzle.y, muzzle.z));
+    }
+
+    addTracer(startX, startZ, endX, endZ, shooterId = null) {
         const material = new THREE.LineBasicMaterial({ color: 0xffff00 });
+        const muzzleWorld = this.getWeaponMuzzleWorldPosition(shooterId);
+        const startY = muzzleWorld?.y ?? 1.3;
+        const startPoint = muzzleWorld || new THREE.Vector3(startX, startY, startZ);
         const points = [
-            new THREE.Vector3(startX, 1.3, startZ),
-            new THREE.Vector3(endX, 1.3, endZ)
+            startPoint,
+            new THREE.Vector3(endX, startY, endZ)
         ];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);
