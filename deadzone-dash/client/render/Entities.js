@@ -38,6 +38,9 @@ function createWeaponModel(weaponVisual) {
     weaponRoot.name = "weaponModel";
     weaponRoot.userData.muzzleLocal = weaponVisual?.muzzleLocal || { x: 0, y: 0, z: -0.8 };
 
+    const mountOffset = weaponVisual?.mountOffset || [0, -0.15, -1.35];
+    weaponRoot.position.set(...mountOffset);
+
     const parts = weaponVisual?.parts || [];
     parts.forEach((part) => {
         const mesh = createWeaponPart(part);
@@ -74,7 +77,8 @@ export function createPlayerMesh() {
 
     const gunContainer = new THREE.Object3D();
     gunContainer.name = "gunContainer";
-    gunContainer.position.set(0.8, 0.3, -0.5);
+    // Pivot from player center/chest so the weapon can orbit 360 degrees around the body.
+    gunContainer.position.set(0, 1.0, 0);
 
     parent.add(gunContainer);
 

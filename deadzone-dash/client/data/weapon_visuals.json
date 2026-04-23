@@ -1,6 +1,7 @@
 {
   "default": {
     "muzzleLocal": { "x": 0, "y": 0, "z": -0.75 },
+    "mountOffset": [0, -0.15, -1.35],
     "parts": [
       {
         "type": "box",
