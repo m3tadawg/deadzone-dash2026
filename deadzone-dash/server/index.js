@@ -5,6 +5,9 @@ const path = require("path");
 
 const StatusEffectSystem = require("./systems/StatusEffectSystem");
 const AISystem = require("./systems/AISystem");
+const ZombieCombatSystem = require("./systems/ZombieCombatSystem");
+const ZombieRangedAttackSystem = require("./systems/ZombieRangedAttackSystem");
+const ZombieProjectileSystem = require("./systems/ZombieProjectileSystem");
 
 const CombatSystem = require("./systems/CombatSystem");
 const playerConfig = require("./data/player.json");
@@ -29,6 +32,7 @@ app.use(express.static(path.join(__dirname, "../client")));
 
 let players = {};
 let zombies = {};
+let projectiles = {};
 
 function createPlayer(id) {
   return {
@@ -194,9 +198,18 @@ setInterval(() => {
     // AI movement
     AISystem.update(zombie, players, deltaTime);
 
+    // Zombie melee attacks
+    ZombieCombatSystem.update(zombie, players, deltaTime);
+
+    // Zombie ranged attacks
+    ZombieRangedAttackSystem.update(zombie, players, projectiles, deltaTime);
+
     // Status effects
     StatusEffectSystem.update(zombie, deltaTime);
   });
+
+  // === UPDATE PROJECTILES ===
+  ZombieProjectileSystem.update(projectiles, players, deltaTime);
 
   // === CLEANUP DEAD ENTITIES ===
   for (let id in zombies) {
@@ -209,7 +222,8 @@ setInterval(() => {
   const snapshot = JSON.stringify({
     type: "snapshot",
     players,
-    zombies
+    zombies,
+    projectiles
   });
 
   wss.clients.forEach(client => {

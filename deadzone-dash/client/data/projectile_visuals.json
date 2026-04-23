@@ -1,0 +1,12 @@
+{
+  "default": {
+    "radius": 0.2,
+    "color": "#88ff88",
+    "emissive": "#1c7a1c"
+  },
+  "acid_spit": {
+    "radius": 0.22,
+    "color": "#8eea5a",
+    "emissive": "#2f8a1c"
+  }
+}

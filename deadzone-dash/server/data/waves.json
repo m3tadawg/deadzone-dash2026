@@ -1,0 +1,58 @@
+{
+  "zombie": {
+    "waves": [
+      {
+        "name": "calm before storm",
+        "durationMs": 45000,
+        "spawnRateMs": 2500,
+        "maxAlive": 14,
+        "spawnBudget": 1,
+        "typeWeights": {
+          "shambler": 0.7,
+          "runner": 0.3
+        }
+      },
+      {
+        "name": "encroaching rush",
+        "durationMs": 50000,
+        "spawnRateMs": 2050,
+        "maxAlive": 18,
+        "spawnBudget": 1,
+        "typeWeights": {
+          "shambler": 0.44,
+          "runner": 0.38,
+          "crawler": 0.1,
+          "spitter": 0.08
+        }
+      },
+      {
+        "name": "heavy footsteps",
+        "durationMs": 55000,
+        "spawnRateMs": 1850,
+        "maxAlive": 21,
+        "spawnBudget": 1.2,
+        "typeWeights": {
+          "shambler": 0.34,
+          "runner": 0.26,
+          "crawler": 0.16,
+          "brute": 0.12,
+          "spitter": 0.12
+        }
+      },
+      {
+        "name": "night swarm",
+        "durationMs": 60000,
+        "spawnRateMs": 1600,
+        "maxAlive": 24,
+        "spawnBudget": 1.35,
+        "typeWeights": {
+          "shambler": 0.22,
+          "runner": 0.34,
+          "crawler": 0.14,
+          "brute": 0.14,
+          "spitter": 0.16
+        }
+      }
+    ]
+  }
+}

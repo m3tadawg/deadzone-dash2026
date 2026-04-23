@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
-import { createPlayerMesh, createZombieMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
+import { createPlayerMesh, createZombieMesh, createProjectileMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
 
 const PLAYER_COLORS = [
     0x3498db, // Blue
@@ -57,12 +57,17 @@ export class SceneManager {
         // Entity storage
         this.playerMeshes = {};
         this.zombieMeshes = {};
+        this.projectileMeshes = {};
         
         // Target data for interpolation
         this.targets = new Map();
         this.localPlayerId = null;
         this.weaponVisualCatalog = null;
+        this.zombieVisualCatalog = null;
+        this.projectileVisualCatalog = null;
         this.weaponVisualsLoaded = this.loadWeaponVisuals();
+        this.zombieVisualsLoaded = this.loadZombieVisuals();
+        this.projectileVisualsLoaded = this.loadProjectileVisuals();
 
         window.addEventListener("resize", () => this.handleResize());
     }
@@ -86,6 +91,37 @@ export class SceneManager {
         }
     }
 
+
+    async loadZombieVisuals() {
+        try {
+            const response = await fetch("./data/zombie_visuals.json");
+            if (!response.ok) throw new Error(`Failed to load zombie visuals (${response.status})`);
+            this.zombieVisualCatalog = await response.json();
+        } catch (err) {
+            console.warn("Unable to load zombie visual catalog, using fallback visuals.", err);
+            this.zombieVisualCatalog = { default: { base: { shape: "capsule", radius: 0.5, height: 1.5, color: "#ff4444" } } };
+        }
+    }
+
+
+    async loadProjectileVisuals() {
+        try {
+            const response = await fetch("./data/projectile_visuals.json");
+            if (!response.ok) throw new Error(`Failed to load projectile visuals (${response.status})`);
+            this.projectileVisualCatalog = await response.json();
+        } catch (err) {
+            console.warn("Unable to load projectile visual catalog, using fallback visuals.", err);
+            this.projectileVisualCatalog = { default: { radius: 0.2, color: "#88ff88", emissive: "#1c7a1c" } };
+        }
+    }
+
+    applyZombieCastCue(mesh, isCasting) {
+        mesh.traverse((node) => {
+            if (!node.material || !node.material.emissive) return;
+            node.material.emissive.set(isCasting ? 0x50aa33 : 0x000000);
+            node.material.emissiveIntensity = isCasting ? 0.6 : 0.0;
+        });
+    }
     handleResize() {
         const aspect = window.innerWidth / window.innerHeight;
         const frustumSize = 35;
@@ -115,7 +151,7 @@ export class SceneManager {
         const processEntity = (id, data, category, createMeshFn, isPlayer) => {
             let mesh = category[id];
             if (!mesh) {
-                mesh = createMeshFn();
+                mesh = createMeshFn(data);
                 category[id] = mesh;
                 this.scene.add(mesh);
                 // Initial jump to position
@@ -159,6 +195,8 @@ export class SceneManager {
                 }
                 targetData.bodyQuat = bodyQuat;
             } else {
+                this.applyZombieCastCue(mesh, (data.castCueRemainingMs || 0) > 0);
+
                 let targetQuat = mesh.quaternion.clone();
                 const direction = new THREE.Vector3().subVectors(targetPos, mesh.position);
                 direction.y = 0; // Keep horizontal
@@ -179,7 +217,19 @@ export class SceneManager {
         this.targets.forEach(t => t.active = false);
 
         Object.entries(snapshot.players).forEach(([id, p]) => processEntity(id, p, this.playerMeshes, createPlayerMesh, true));
-        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, createZombieMesh, false));
+        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, (zombieData) => createZombieMesh(zombieData.type, this.zombieVisualCatalog), false));
+
+        const projectileMap = snapshot.projectiles || {};
+        Object.entries(projectileMap).forEach(([id, proj]) => {
+            let mesh = this.projectileMeshes[id];
+            if (!mesh) {
+                mesh = createProjectileMesh(proj.type, this.projectileVisualCatalog);
+                this.projectileMeshes[id] = mesh;
+                this.scene.add(mesh);
+            }
+
+            mesh.position.set(proj.x, 1.05, proj.z);
+        });
 
         // Cleanup stale meshes
         const cleanup = (meshes) => {
@@ -192,6 +242,13 @@ export class SceneManager {
         };
         cleanup(this.playerMeshes);
         cleanup(this.zombieMeshes);
+
+        Object.keys(this.projectileMeshes).forEach(id => {
+            if (!projectileMap[id]) {
+                this.scene.remove(this.projectileMeshes[id]);
+                delete this.projectileMeshes[id];
+            }
+        });
         
         // Remove inactive targets
         for (const [id, target] of this.targets.entries()) {
@@ -227,6 +284,10 @@ export class SceneManager {
                     mesh.quaternion.slerp(target.quaternion, LERP_SPEED * dt);
                 }
             }
+        });
+
+        Object.values(this.projectileMeshes).forEach((mesh) => {
+            mesh.rotation.y += dt * 8;
         });
 
         // Elastic Camera Follow & Biome Effects

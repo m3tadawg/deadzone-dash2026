@@ -1,7 +1,7 @@
 {
   "zombie": {
-    "spawnRateMs": 2000,
-    "maxCount": 20,
+    "spawnRateMs": 2200,
+    "maxCount": 18,
     "spawnRadius": 50,
     "baseHealth": 50,
     "playerAvoidRadius": 12,
@@ -14,6 +14,17 @@
     },
     "hotspotAreaTypeMultiplier": {
       "graveyard_hotspot": 2.5
+    },
+    "waveSystem": {
+      "enabled": true,
+      "loop": true,
+      "waveCycleLabel": "outbreak",
+      "defaultWaveDurationMs": 45000,
+      "difficultyGrowthPerCycle": 0.12,
+      "spawnRateFloorMs": 700,
+      "maxAliveGrowthPerCycle": 2,
+      "healthGrowthPerCycle": 0.08,
+      "spawnBudgetGrowthPerCycle": 0.12
     }
   }
 }
