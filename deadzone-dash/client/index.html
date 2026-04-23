@@ -3,31 +3,7 @@
 
 <head>
     <title>DeadZone Dash</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
-        canvas { display: block; }
-        #hud {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
-            pointer-events: none;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            font-size: 20px;
-            display: none;
-        }
-        #notifications {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #ffaa00;
-            font-size: 18px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles/hud.css">
     <script type="importmap">
       {
         "imports": {
@@ -40,7 +16,39 @@
 
 <body>
     <canvas id="game"></canvas>
-    <div id="hud">Hold [E] to Search</div>
+    <div class="hud-layer">
+        <div id="vitalsPanel" class="panel">
+            <div class="bar-row">
+                <div class="bar-label"><span>Health</span><span id="healthText">100 / 100</span></div>
+                <div class="bar-track"><div id="healthFill" class="bar-fill" style="width:100%"></div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label"><span>Stamina</span><span id="staminaText">100 / 100</span></div>
+                <div class="bar-track"><div id="staminaFill" class="bar-fill" style="width:100%"></div></div>
+            </div>
+        </div>
+        <div id="statsPanel" class="panel">
+            <div class="stats-grid">
+                <span class="label">Wave</span><span class="value" id="waveValue">1</span>
+                <span class="label">Kills</span><span class="value" id="killsValue">0</span>
+                <span class="label">Score</span><span class="value" id="scoreValue">0</span>
+            </div>
+        </div>
+        <div id="combatPanel" class="panel">
+            <div id="combatTop">
+                <div>
+                    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Weapon</div>
+                    <div id="weaponName">Pistol</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Ammo</div>
+                    <div id="ammoCount">∞</div>
+                </div>
+            </div>
+            <div id="inventoryBar"></div>
+        </div>
+    </div>
+    <div id="searchPrompt">Hold [E] to Search</div>
     <div id="notifications"></div>
     <script type="module" src="main.js"></script>
 </body>

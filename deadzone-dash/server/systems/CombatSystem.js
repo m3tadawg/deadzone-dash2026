@@ -10,6 +10,7 @@ class CombatSystem {
 
         if (!weapon || now - player.lastShotTime < weapon.fireRate) return null;
         player.lastShotTime = now;
+        let didKill = false;
 
         const aimVec = { x: player.aimX - player.x, z: player.aimZ - player.z };
         const aimLength = Math.sqrt(aimVec.x * aimVec.x + aimVec.z * aimVec.z);
@@ -66,7 +67,10 @@ class CombatSystem {
 
                 if (hitZombie) {
                     hitZombie.health -= weapon.damage;
-                    if (hitZombie.health <= 0) hitZombie.dead = true;
+                    if (hitZombie.health <= 0) {
+                        hitZombie.dead = true;
+                        didKill = true;
+                    }
 
                     if (weapon.effects) {
                         weapon.effects.forEach((effectName) => {
@@ -80,7 +84,7 @@ class CombatSystem {
             }
         }
 
-        return { startX, startZ, endX, endZ };
+        return { startX, startZ, endX, endZ, didKill };
     }
 }
 

@@ -13,6 +13,7 @@ const CombatSystem = require("./systems/CombatSystem");
 const playerConfig = require("./data/player.json");
 const weaponsConfig = require("./data/weapons.json");
 const WorldSystem = require("./systems/WorldSystem");
+const PlayerStatsSystem = require("./systems/PlayerStatsSystem");
 
 const app = express();
 const server = http.createServer(app);
@@ -46,7 +47,8 @@ function createPlayer(id) {
     statusEffects: [],
     dead: false,
     weapon: "pistol",
-    lastShotTime: 0
+    lastShotTime: 0,
+    ...PlayerStatsSystem.createInitialStats()
   };
 }
 
@@ -116,6 +118,9 @@ wss.on("connection", (ws) => {
 
         const result = combatSystem.handleShoot(player, zombies);
         if (result) {
+            if (result.didKill) {
+                PlayerStatsSystem.creditKill(player);
+            }
             const tracerMsg = JSON.stringify({ type: "tracer", shooterId: id, ...result });
             wss.clients.forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -188,6 +193,8 @@ setInterval(() => {
       }
     }
 
+    PlayerStatsSystem.updateStamina(player, deltaTime);
+
     StatusEffectSystem.update(player, deltaTime);
   });
 
@@ -223,7 +230,10 @@ setInterval(() => {
     type: "snapshot",
     players,
     zombies,
-    projectiles
+    projectiles,
+    hud: {
+      wave: AISpawner.currentWaveNumber || 1
+    }
   });
 
   wss.clients.forEach(client => {

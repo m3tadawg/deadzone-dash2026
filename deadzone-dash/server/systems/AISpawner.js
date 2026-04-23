@@ -116,6 +116,7 @@ const AISpawner = {
     lastSpawnTime: 0,
     zombieCounter: 0,
     sessionStartTime: null,
+    currentWaveNumber: 1,
 
     update(currentTime, zombies, players) {
         const config = spawnerConfig.zombie;
@@ -136,6 +137,7 @@ const AISpawner = {
         if (waveSystem.enabled) {
             const waveState = getCurrentWaveState(this, currentTime, waveSystem);
             const spawnPlan = buildSpawnPlan(waveState, waveSystem);
+            this.currentWaveNumber = waveState.waveNumber;
             activeSpawnRate = spawnPlan.spawnRateMs;
             activeMaxAlive = spawnPlan.maxAlive;
             spawnBudget = spawnPlan.spawnBudget;
