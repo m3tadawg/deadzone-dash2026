@@ -126,6 +126,16 @@ canvas { display: block; }
   margin-bottom: 12px;
 }
 
+.combat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.combat-right {
+  text-align: right;
+}
+
 #weaponName { font-size: 18px; font-weight: 700; }
 #ammoCount { font-size: 22px; font-weight: 800; letter-spacing: .5px; }
 
