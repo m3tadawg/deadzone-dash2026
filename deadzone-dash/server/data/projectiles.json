@@ -1,0 +1,19 @@
+{
+  "acid_spit": {
+    "speed": 9.5,
+    "radius": 0.22,
+    "maxLifetimeMs": 2800,
+    "impactRadius": 1.2,
+    "damage": 12,
+    "effects": [
+      {
+        "type": "acid_burn",
+        "duration": 3,
+        "tickRate": 1,
+        "effect": {
+          "damagePerTick": 3
+        }
+      }
+    ]
+  }
+}

@@ -127,10 +127,43 @@ export function applyWeaponVisual(mesh, weaponId, weaponVisualCatalog) {
 
 
 
-export function createZombieMesh() {
-    const geometry = new THREE.CapsuleGeometry(0.5, 1.5, 4, 8);
-    const material = new THREE.MeshStandardMaterial({ color: 0xff4444 });
-    return new THREE.Mesh(geometry, material);
+function buildZombiePart(partDef) {
+    if (!partDef) return null;
+
+    let geometry;
+    if (partDef.shape === "capsule") {
+        geometry = new THREE.CapsuleGeometry(partDef.radius || 0.5, partDef.height || 1.5, 4, 8);
+    } else if (partDef.shape === "box") {
+        const size = partDef.size || [0.4, 0.4, 0.4];
+        geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    } else {
+        return null;
+    }
+
+    const mesh = new THREE.Mesh(geometry, getMaterial(partDef.color || "#ff4444"));
+    const offset = partDef.offset || [0, 0, 0];
+    mesh.position.set(offset[0], offset[1], offset[2]);
+    return mesh;
+}
+
+export function createZombieMesh(type = "default", zombieVisualCatalog = null) {
+    const visual = (zombieVisualCatalog && zombieVisualCatalog[type])
+        || (zombieVisualCatalog && zombieVisualCatalog.default)
+        || {
+            base: { shape: "capsule", radius: 0.5, height: 1.5, color: "#ff4444" },
+            head: { shape: "box", size: [0.4, 0.4, 0.4], offset: [0, 1.1, 0], color: "#ffd6bf" }
+        };
+
+    const root = new THREE.Object3D();
+    const base = buildZombiePart(visual.base);
+    const head = buildZombiePart(visual.head);
+    const accent = buildZombiePart(visual.accent);
+
+    if (base) root.add(base);
+    if (head) root.add(head);
+    if (accent) root.add(accent);
+
+    return root;
 }
 
 export function createBuilding(x, z) {
@@ -141,4 +174,20 @@ export function createBuilding(x, z) {
     mesh.position.set(x, 2, z);
 
     return mesh;
+}
+
+
+export function createProjectileMesh(type = "default", projectileVisualCatalog = null) {
+    const visual = (projectileVisualCatalog && projectileVisualCatalog[type])
+        || (projectileVisualCatalog && projectileVisualCatalog.default)
+        || { radius: 0.2, color: "#88ff88", emissive: "#1c7a1c" };
+
+    const geometry = new THREE.SphereGeometry(visual.radius || 0.2, 10, 10);
+    const material = new THREE.MeshStandardMaterial({
+        color: visual.color || "#88ff88",
+        emissive: visual.emissive || "#1c7a1c",
+        emissiveIntensity: 0.55
+    });
+
+    return new THREE.Mesh(geometry, material);
 }
