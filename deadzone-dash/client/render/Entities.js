@@ -38,7 +38,7 @@ function createWeaponModel(weaponVisual) {
     weaponRoot.name = "weaponModel";
     weaponRoot.userData.muzzleLocal = weaponVisual?.muzzleLocal || { x: 0, y: 0, z: -0.8 };
 
-    const mountOffset = weaponVisual?.mountOffset || [0, -0.15, -1.35];
+    const mountOffset = weaponVisual?.mountOffset || [0, -0.15, -1.00];
     weaponRoot.position.set(...mountOffset);
 
     const parts = weaponVisual?.parts || [];
