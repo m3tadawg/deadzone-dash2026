@@ -1,0 +1,165 @@
+:root {
+  --panel-bg: rgba(8, 12, 20, 0.72);
+  --panel-border: rgba(255, 255, 255, 0.14);
+  --text-primary: #f6f8ff;
+  --text-muted: #93a0bf;
+  --danger: #ff4d6d;
+  --stamina: #4ade80;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+canvas { display: block; }
+
+#searchPrompt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-primary);
+  text-align: center;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  font-size: 16px;
+  display: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: rgba(5, 8, 14, 0.6);
+}
+
+#notifications {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  color: #ffaa00;
+  font-size: 16px;
+}
+
+.hud-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--text-primary);
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  backdrop-filter: blur(7px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  padding: 12px 14px;
+}
+
+#vitalsPanel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: min(300px, calc(100vw - 32px));
+}
+
+.bar-row { margin-top: 10px; }
+
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.bar-track {
+  width: 100%;
+  height: 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .15s ease;
+}
+
+#healthFill { background: linear-gradient(90deg, #ff6b6b, var(--danger)); }
+#staminaFill { background: linear-gradient(90deg, #86efac, var(--stamina)); }
+
+#statsPanel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  min-width: 220px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 14px;
+  font-size: 13px;
+}
+
+.stats-grid .label { color: var(--text-muted); }
+.stats-grid .value { text-align: right; font-weight: 600; }
+
+#combatPanel {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(650px, calc(100vw - 24px));
+}
+
+#combatTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+#weaponName { font-size: 18px; font-weight: 700; }
+#ammoCount { font-size: 22px; font-weight: 800; letter-spacing: .5px; }
+
+#inventoryBar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.inv-slot {
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.03);
+  min-height: 54px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.inv-slot.active {
+  border-color: rgba(53, 209, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(53, 209, 255, 0.35);
+  color: var(--text-primary);
+}
+
+.slot-index { font-size: 10px; opacity: 0.8; }
+
+@media (max-width: 700px) {
+  #vitalsPanel, #statsPanel { width: calc(50vw - 20px); min-width: 0; }
+  #statsPanel { min-width: 0; }
+  #ammoCount { font-size: 18px; }
+  #weaponName { font-size: 15px; }
+}

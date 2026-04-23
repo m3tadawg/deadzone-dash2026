@@ -1,4 +1,13 @@
 {
   "baseSpeed": 3.5,
-  "maxHealth": 100
+  "maxHealth": 100,
+  "maxStamina": 100,
+  "scorePerKill": 100,
+  "startingInventory": [
+    "medkit",
+    null,
+    null,
+    null,
+    null
+  ]
 }

@@ -1,8 +1,10 @@
 import { SceneManager } from "./render/SceneManager.js";
+import { HUDManager } from "./ui/HUDManager.js";
 
 const socket = new WebSocket("ws://localhost:3000");
 
 const sceneManager = new SceneManager();
+const hud = new HUDManager();
 
 let latestSnapshot = null;
 let snapshotChanged = false;
@@ -20,8 +22,7 @@ socket.onmessage = (msg) => {
   } else if (data.type === "tracer") {
     sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ, data.shooterId);
   } else if (data.type === "notification") {
-    document.getElementById("notifications").innerText = data.text;
-    setTimeout(() => { document.getElementById("notifications").innerText = ""; }, 3000);
+    hud.showNotification(data.text);
   }
 };
 
@@ -113,8 +114,9 @@ function loop() {
         const localPlayer = latestSnapshot.players[sceneManager.localPlayerId];
         if (localPlayer) {
             const hasSearchable = sceneManager.checkNearbySearchable(localPlayer.x, localPlayer.z, 3.0);
-            document.getElementById("hud").style.display = hasSearchable ? "block" : "none";
+            hud.setSearchPromptVisible(hasSearchable);
         }
+        hud.updateFromSnapshot(latestSnapshot, sceneManager.localPlayerId);
         snapshotChanged = false;
     }
     sceneManager.update(dt);
