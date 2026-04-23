@@ -29,6 +29,25 @@ class HUDManager {
       inventoryBar: document.getElementById("inventoryBar"),
       notifications: document.getElementById("notifications")
     };
+    this._notificationTimeout = null;
+    this._maxHealth = 100;
+    this._maxStamina = 100;
+    this._inventorySignature = "";
+    this._inventorySlots = [];
+
+    for (let i = 0; i < 5; i += 1) {
+      const slot = document.createElement("div");
+      slot.className = `inv-slot ${i === 0 ? "active" : ""}`.trim();
+
+      const itemName = document.createElement("div");
+      const slotIndex = document.createElement("div");
+      slotIndex.className = "slot-index";
+      slotIndex.textContent = `Slot ${i + 1}`;
+
+      slot.append(itemName, slotIndex);
+      this.els.inventoryBar.appendChild(slot);
+      this._inventorySlots.push(itemName);
+    }
 
     this.renderInventory(FALLBACK_INVENTORY);
   }
@@ -38,9 +57,15 @@ class HUDManager {
   }
 
   showNotification(text) {
+    if (this._notificationTimeout) {
+      clearTimeout(this._notificationTimeout);
+      this._notificationTimeout = null;
+    }
+
     this.els.notifications.innerText = text;
-    setTimeout(() => {
+    this._notificationTimeout = setTimeout(() => {
       this.els.notifications.innerText = "";
+      this._notificationTimeout = null;
     }, 3000);
   }
 
@@ -48,8 +73,11 @@ class HUDManager {
     const localPlayer = snapshot.players[localPlayerId];
     if (!localPlayer) return;
 
-    const maxHealth = 100;
-    const maxStamina = 100;
+    this._maxHealth = snapshot.hud?.maxHealth ?? this._maxHealth;
+    this._maxStamina = snapshot.hud?.maxStamina ?? this._maxStamina;
+
+    const maxHealth = this._maxHealth;
+    const maxStamina = this._maxStamina;
     const health = Math.max(0, Math.round(localPlayer.health ?? 0));
     const stamina = Math.max(0, Math.round(localPlayer.stamina ?? maxStamina));
 
@@ -74,14 +102,13 @@ class HUDManager {
     const slots = inventory.slice(0, 5);
     while (slots.length < 5) slots.push(null);
 
-    this.els.inventoryBar.innerHTML = slots
-      .map((item, i) => `
-      <div class="inv-slot ${i === 0 ? "active" : ""}">
-        <div>${item ? String(item).replaceAll("_", " ") : "Empty"}</div>
-        <div class="slot-index">Slot ${i + 1}</div>
-      </div>
-    `)
-      .join("");
+    const inventorySignature = slots.map((item) => item ?? "").join("|");
+    if (inventorySignature === this._inventorySignature) return;
+
+    this._inventorySignature = inventorySignature;
+    slots.forEach((item, index) => {
+      this._inventorySlots[index].textContent = item ? String(item).replaceAll("_", " ") : "Empty";
+    });
   }
 }
 

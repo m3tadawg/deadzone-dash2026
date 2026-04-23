@@ -232,7 +232,9 @@ setInterval(() => {
     zombies,
     projectiles,
     hud: {
-      wave: AISpawner.currentWaveNumber || 1
+      wave: AISpawner.currentWaveNumber || 1,
+      maxHealth: playerConfig.maxHealth,
+      maxStamina: playerConfig.maxStamina
     }
   });
 

@@ -21,14 +21,20 @@ const PlayerStatsSystem = {
 
   updateStamina(player, deltaTime) {
     const isMoving = Boolean(player.vx || player.vz);
+    const staminaDrainRate = playerConfig.staminaDrainRate ?? 6;
+    const staminaRegenRate = playerConfig.staminaRegenRate ?? 10;
+
     if (isMoving) {
-      player.stamina = Math.max(0, (player.stamina ?? playerConfig.maxStamina) - deltaTime * 6);
+      player.stamina = Math.max(
+        0,
+        (player.stamina ?? playerConfig.maxStamina) - deltaTime * staminaDrainRate
+      );
       return;
     }
 
     player.stamina = Math.min(
       playerConfig.maxStamina,
-      (player.stamina ?? playerConfig.maxStamina) + deltaTime * 10
+      (player.stamina ?? playerConfig.maxStamina) + deltaTime * staminaRegenRate
     );
   }
 };

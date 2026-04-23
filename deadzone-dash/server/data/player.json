@@ -2,6 +2,8 @@
   "baseSpeed": 3.5,
   "maxHealth": 100,
   "maxStamina": 100,
+  "staminaDrainRate": 6,
+  "staminaRegenRate": 10,
   "scorePerKill": 100,
   "startingInventory": [
     "medkit",
