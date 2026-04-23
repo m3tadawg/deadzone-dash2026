@@ -28,6 +28,7 @@ Because this lives in weapon JSON, each weapon can have different origin alignme
 Each weapon entry supports:
 
 - `muzzleLocal`: local pivot hint for future effects (muzzle flash/projectile spawn)
+- `mountOffset` (optional): local `[x, y, z]` offset from the chest pivot (use larger forward values for full orbit-style spacing)
 - `parts`: list of primitive meshes
   - `type`: `box` or `cylinder`
   - geometry fields:
@@ -39,3 +40,8 @@ Each weapon entry supports:
   - `color`: hex string
 
 This keeps asset generation modular and editable via JSON instead of hard-coded mesh code.
+
+
+## Chest-centered weapon pivot
+
+Player weapon rotation now pivots from a shared chest anchor (`gunContainer`) and each weapon can apply a small `mountOffset` so aiming remains equidistant around the player body regardless of direction.
