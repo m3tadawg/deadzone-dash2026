@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
-import { createPlayerMesh, createZombieMesh, applyPlayerCustomization } from "./Entities.js";
+import { createPlayerMesh, createZombieMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
 
 const PLAYER_COLORS = [
     0x3498db, // Blue
@@ -20,11 +20,18 @@ export class SceneManager {
 
         this.camera = createCamera();
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        const gameCanvas = document.getElementById("game");
+        this.renderer = new THREE.WebGLRenderer({
+            canvas: gameCanvas || undefined,
+            antialias: true
+        });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(this.renderer.domElement);
+
+        if (!gameCanvas) {
+            document.body.appendChild(this.renderer.domElement);
+        }
 
         // Lighting
         const hemiLight = new THREE.HemisphereLight(0x443333, 0x222222, 0.6);
@@ -54,8 +61,29 @@ export class SceneManager {
         // Target data for interpolation
         this.targets = new Map();
         this.localPlayerId = null;
+        this.weaponVisualCatalog = null;
+        this.weaponVisualsLoaded = this.loadWeaponVisuals();
 
         window.addEventListener("resize", () => this.handleResize());
+    }
+
+    async loadWeaponVisuals() {
+        try {
+            const response = await fetch("./data/weapon_visuals.json");
+            if (!response.ok) throw new Error(`Failed to load weapon visuals (${response.status})`);
+            this.weaponVisualCatalog = await response.json();
+        } catch (err) {
+            console.warn("Unable to load weapon visual catalog, using fallback visuals.", err);
+            this.weaponVisualCatalog = {
+                default: {
+                    muzzleLocal: { x: 0, y: 0, z: -0.75 },
+                    parts: [
+                        { type: "box", size: [0.24, 0.2, 1.4], position: [0, 0, -0.7], color: "#3f3f3f" },
+                        { type: "box", size: [0.22, 0.25, 0.35], position: [0, -0.2, -0.15], color: "#2c2c2c" }
+                    ]
+                }
+            };
+        }
     }
 
     handleResize() {
@@ -101,6 +129,10 @@ export class SceneManager {
                         skinColor: 0xffdbac
                     });
                 }
+            }
+
+            if (isPlayer && this.weaponVisualCatalog) {
+                applyWeaponVisual(mesh, data.weapon, this.weaponVisualCatalog);
             }
 
             const targetPos = new THREE.Vector3(data.x, 1, data.z);

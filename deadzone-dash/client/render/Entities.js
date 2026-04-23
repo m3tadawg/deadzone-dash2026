@@ -4,9 +4,48 @@ import * as THREE from "three";
 const boxGeos = {
     torso: new THREE.BoxGeometry(1.0, 1.2, 0.6),
     head: new THREE.BoxGeometry(0.6, 0.6, 0.6),
-    visor: new THREE.BoxGeometry(0.7, 0.2, 0.15),
-    gun: new THREE.BoxGeometry(0.25, 0.25, 1.5) // Slightly longer/beefier weapon
+    visor: new THREE.BoxGeometry(0.7, 0.2, 0.15)
 };
+
+const materialCache = new Map();
+
+function getMaterial(color = "#555555") {
+    if (!materialCache.has(color)) {
+        materialCache.set(color, new THREE.MeshStandardMaterial({ color }));
+    }
+    return materialCache.get(color);
+}
+
+function createWeaponPart(part) {
+    let mesh = null;
+
+    if (part.type === "box") {
+        const [width, height, depth] = part.size;
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), getMaterial(part.color));
+    } else if (part.type === "cylinder") {
+        mesh = new THREE.Mesh(new THREE.CylinderGeometry(part.radiusTop, part.radiusBottom, part.height, part.radialSegments || 8), getMaterial(part.color));
+    }
+
+    if (!mesh) return null;
+
+    mesh.position.set(...(part.position || [0, 0, 0]));
+    mesh.rotation.set(...(part.rotation || [0, 0, 0]));
+    return mesh;
+}
+
+function createWeaponModel(weaponVisual) {
+    const weaponRoot = new THREE.Object3D();
+    weaponRoot.name = "weaponModel";
+    weaponRoot.userData.muzzleLocal = weaponVisual?.muzzleLocal || { x: 0, y: 0, z: -0.8 };
+
+    const parts = weaponVisual?.parts || [];
+    parts.forEach((part) => {
+        const mesh = createWeaponPart(part);
+        if (mesh) weaponRoot.add(mesh);
+    });
+
+    return weaponRoot;
+}
 
 export function createPlayerMesh() {
     const parent = new THREE.Object3D();
@@ -35,11 +74,7 @@ export function createPlayerMesh() {
 
     const gunContainer = new THREE.Object3D();
     gunContainer.name = "gunContainer";
-
-    // Weapon
-    const gun = new THREE.Mesh(boxGeos.gun, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-    gun.position.set(0.8, 0.3, -0.5); // Scaled out to match beefier body
-    gunContainer.add(gun);
+    gunContainer.position.set(0.8, 0.3, -0.5);
 
     parent.add(gunContainer);
 
@@ -67,6 +102,23 @@ export function applyPlayerCustomization(mesh, config) {
         const head = body.getObjectByName("head");
         if (head) head.material.color.set(config.skinColor);
     }
+}
+
+export function applyWeaponVisual(mesh, weaponId, weaponVisualCatalog) {
+    if (!mesh || !weaponVisualCatalog) return;
+    if (mesh.userData.weaponId === weaponId) return;
+
+    const gunContainer = mesh.getObjectByName("gunContainer");
+    if (!gunContainer) return;
+
+    const weaponVisual = weaponVisualCatalog[weaponId] || weaponVisualCatalog.default;
+    if (!weaponVisual) return;
+
+    const oldWeapon = gunContainer.getObjectByName("weaponModel");
+    if (oldWeapon) gunContainer.remove(oldWeapon);
+
+    gunContainer.add(createWeaponModel(weaponVisual));
+    mesh.userData.weaponId = weaponId;
 }
 
 
