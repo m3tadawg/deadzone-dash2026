@@ -23,7 +23,7 @@
     "speed": 0.78,
     "spawnWeight": 0.35,
     "spawnCost": 0.95,
-    "unlockWave": 1,
+    "unlockWave": 3,
     "attack": {
       "damage": 6,
       "range": 1.1,
@@ -39,11 +39,11 @@
   },
   {
     "type": "brute",
-    "hp": 125,
+    "hp": 200,
     "speed": 0.44,
     "spawnWeight": 0.15,
     "spawnCost": 1.65,
-    "unlockWave": 3,
+    "unlockWave": 5,
     "attack": {
       "damage": 18,
       "range": 1.55,
@@ -63,7 +63,7 @@
     "speed": 0.68,
     "spawnWeight": 0.05,
     "spawnCost": 1.1,
-    "unlockWave": 2,
+    "unlockWave": 6,
     "attack": {
       "damage": 5,
       "range": 0.95,
@@ -95,7 +95,7 @@
     "speed": 0.58,
     "spawnWeight": 0.08,
     "spawnCost": 1.3,
-    "unlockWave": 2,
+    "unlockWave": 8,
     "rangedAttack": {
       "projectileId": "acid_spit",
       "minRange": 2.5,
