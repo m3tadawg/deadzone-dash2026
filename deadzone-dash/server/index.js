@@ -112,7 +112,7 @@ wss.on("connection", (ws) => {
 
         const result = combatSystem.handleShoot(player, zombies);
         if (result) {
-            const tracerMsg = JSON.stringify({ type: "tracer", ...result });
+            const tracerMsg = JSON.stringify({ type: "tracer", shooterId: id, ...result });
             wss.clients.forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
                     client.send(tracerMsg);

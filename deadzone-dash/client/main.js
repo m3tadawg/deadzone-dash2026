@@ -18,7 +18,7 @@ socket.onmessage = (msg) => {
     latestSnapshot = data;
     snapshotChanged = true;
   } else if (data.type === "tracer") {
-    sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ);
+    sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ, data.shooterId);
   } else if (data.type === "notification") {
     document.getElementById("notifications").innerText = data.text;
     setTimeout(() => { document.getElementById("notifications").innerText = ""; }, 3000);
