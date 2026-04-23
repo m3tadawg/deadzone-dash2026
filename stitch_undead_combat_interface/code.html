@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DeadZone Dash HUD</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Space+Grotesk:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-tertiary-fixed": "#410003",
+                "primary-container": "#2aff00",
+                "secondary-container": "#feb700",
+                "inverse-primary": "#0d6e00",
+                "on-surface-variant": "#baccaf",
+                "on-secondary-fixed": "#271900",
+                "on-secondary": "#412d00",
+                "on-primary-container": "#0e7100",
+                "tertiary-container": "#ffd2ce",
+                "surface-container-high": "#282a2b",
+                "surface-container": "#1e2021",
+                "background": "#121415",
+                "surface-variant": "#333536",
+                "secondary": "#ffdb9d",
+                "on-primary-fixed-variant": "#085300",
+                "error-container": "#93000a",
+                "primary": "#edffe0",
+                "on-surface": "#e2e2e3",
+                "on-error-container": "#ffdad6",
+                "inverse-on-surface": "#2f3132",
+                "on-secondary-container": "#6b4b00",
+                "surface-container-low": "#1a1c1d",
+                "on-tertiary": "#680008",
+                "on-primary-fixed": "#012200",
+                "secondary-fixed": "#ffdea8",
+                "error": "#ffb4ab",
+                "on-tertiary-container": "#c3051b",
+                "on-tertiary-fixed-variant": "#930010",
+                "tertiary-fixed": "#ffdad6",
+                "outline-variant": "#3b4b35",
+                "surface-container-lowest": "#0c0e0f",
+                "surface": "#121415",
+                "on-primary": "#043900",
+                "primary-fixed": "#78ff5c",
+                "outline": "#85967c",
+                "on-background": "#e2e2e3",
+                "on-secondary-fixed-variant": "#5e4200",
+                "surface-dim": "#121415",
+                "tertiary-fixed-dim": "#ffb3ad",
+                "secondary-fixed-dim": "#ffba20",
+                "primary-fixed-dim": "#25e500",
+                "surface-container-highest": "#333536",
+                "inverse-surface": "#e2e2e3",
+                "surface-bright": "#38393a",
+                "surface-tint": "#25e500",
+                "tertiary": "#fff7f6",
+                "on-error": "#690005"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "margin": "32px",
+                "hud-safe-zone": "48px",
+                "gutter": "16px",
+                "unit": "4px"
+        },
+        "fontFamily": {
+                "body-sm": [
+                        "Inter"
+                ],
+                "label-bold": [
+                        "Space Grotesk"
+                ],
+                "headline-xl": [
+                        "Space Grotesk"
+                ],
+                "data-num": [
+                        "Space Grotesk"
+                ],
+                "body-lg": [
+                        "Inter"
+                ],
+                "headline-md": [
+                        "Space Grotesk"
+                ]
+        },
+        "fontSize": {
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "1.4",
+                                "letterSpacing": "0em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-bold": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.15em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-xl": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "data-num": [
+                        "32px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.5",
+                                "letterSpacing": "0.01em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+    /* Custom utility classes based on Brand Guidance */
+    .clip-tr {
+        clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    }
+    .clip-tl {
+        clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+    }
+    .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    }
+</style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden relative font-['Inter'] antialiased">
+<!-- Game Background Layer -->
+<div class="absolute inset-0 z-0 bg-zinc-900 overflow-hidden">
+<!-- Placeholder for top-down gameplay background -->
+<img alt="Top-down view of a moody 3D city street with green-tinted lighting, dark alleyways, and scattered debris" class="w-full h-full object-cover opacity-30 mix-blend-luminosity brightness-50" data-alt="Top-down view of a moody 3D city street with green-tinted lighting, dark alleyways, and scattered debris" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAADj2ZwlMMAq94rfbMkaMbGoAWGwaCRTryrb5pttKk3WcaRgaVX9c_j18EGN3Ykximw8THyz7lgnX-8thlsXgTtuWLfcIkfXNPWLISiFfBP49zi5tObIcoV-ildb5aTf3p9RUhMxs_Kzr9yfzPQvF8F6isKIwASU7ZetwUV8miWB3qsQoyg8oo40miI3z1A6CZYNN2PU89UhNdHIWOMhiBQdWKZhNPtroQhVfZN_TA1M3Dv0daXMxUoX-hZI3q9WThMe_t_YdkqfId"/>
+<div class="absolute inset-0 bg-primary-container/5 mix-blend-overlay pointer-events-none"></div>
+<!-- Vignette -->
+<div class="absolute inset-0 shadow-[inset_0_0_150px_rgba(0,0,0,0.9)] pointer-events-none"></div>
+</div>
+<!-- TopAppBar (JSON Sourced) -->
+<nav class="fixed top-0 w-full h-12 border-b-2 border-zinc-800 bg-zinc-950/80 backdrop-blur-md flex justify-between items-center px-6 z-50 shadow-[0_2px_10px_rgba(42,255,0,0.1)]">
+<div class="flex items-center">
+<span class="text-lime-400 font-black tracking-widest border-r-2 border-lime-400 pr-4 mr-4 font-['Space_Grotesk'] uppercase text-lg">SECTOR_07_TACTICAL_HUD</span>
+<div class="flex gap-6 font-['Space_Grotesk'] uppercase tracking-tighter font-bold">
+<span class="text-lime-400 border-b-2 border-lime-400 pb-1">WAVE 12</span>
+<span class="text-zinc-500">KILLS: 2,450</span>
+<span class="text-zinc-500">SCORE: 124,000</span>
+</div>
+</div>
+<div class="flex gap-4 text-zinc-500">
+<button class="hover:bg-lime-400/10 hover:text-lime-300 transition-colors p-1 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<button class="hover:bg-lime-400/10 hover:text-lime-300 transition-colors p-1 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+</button>
+</div>
+</nav>
+<!-- HUD SAFE ZONE CONTAINER -->
+<div class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-hud-safe-zone pt-[calc(48px+3rem)]">
+<!-- Top Section (Empty space for gameplay, handled by TopAppBar) -->
+<div class="flex-1 w-full relative">
+<!-- Tactical Reticle / Center Marker (Decorative) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 opacity-20 pointer-events-none flex items-center justify-center">
+<div class="w-[2px] h-full bg-primary-container"></div>
+<div class="h-[2px] w-full bg-primary-container absolute"></div>
+<div class="w-4 h-4 border border-primary-container rounded-full absolute"></div>
+</div>
+</div>
+<!-- Bottom HUD Section -->
+<div class="w-full flex justify-between items-end gap-gutter h-auto mt-auto">
+<!-- Bottom-Left: Vital Signs -->
+<div class="flex flex-col gap-unit w-64 pointer-events-auto">
+<!-- Health Bar -->
+<div class="flex flex-col gap-1">
+<span class="font-label-bold text-label-bold text-on-surface-variant uppercase">HP / Vitals</span>
+<div class="h-8 bg-surface-container-high border-2 border-surface-variant p-1 flex gap-1 clip-tl relative overflow-hidden bg-noise">
+<div class="h-full flex-1 bg-primary-container shadow-[0_0_10px_rgba(42,255,0,0.5)]"></div>
+<div class="h-full flex-1 bg-primary-container shadow-[0_0_10px_rgba(42,255,0,0.5)]"></div>
+<div class="h-full flex-1 bg-primary-container shadow-[0_0_10px_rgba(42,255,0,0.5)]"></div>
+<div class="h-full flex-1 bg-primary-container shadow-[0_0_10px_rgba(42,255,0,0.5)]"></div>
+<div class="h-full flex-1 bg-primary-container shadow-[0_0_10px_rgba(42,255,0,0.5)]"></div>
+<div class="h-full flex-1 bg-surface-variant"></div>
+<!-- Scanline effect overlay -->
+<div class="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.2)_50%)] bg-[length:100%_4px] pointer-events-none"></div>
+</div>
+</div>
+<!-- Stamina Bar -->
+<div class="flex flex-col gap-1 mt-2">
+<div class="flex justify-between items-end">
+<span class="font-label-bold text-[10px] text-secondary-container uppercase tracking-widest">Stamina</span>
+<span class="font-label-bold text-[10px] text-secondary-container">80%</span>
+</div>
+<div class="h-3 bg-surface-container-high border border-surface-variant p-[2px] w-3/4">
+<div class="h-full bg-secondary-container w-4/5 shadow-[0_0_8px_rgba(254,183,0,0.4)]"></div>
+</div>
+</div>
+</div>
+<!-- Bottom-Center: SideNavBar (Repurposed as Hotbar based on JSON struct) -->
+<div class="bg-zinc-950/90 border-2 border-zinc-800 clip-tr pointer-events-auto flex items-end p-2 gap-2 h-auto">
+<!-- Slot 1 (Active) -->
+<div class="bg-primary-container text-black p-2 border-2 border-white flex flex-col items-center justify-center w-16 h-16 relative">
+<span class="absolute top-1 left-1 font-label-bold text-[10px]">1</span>
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">military_tech</span>
+</div>
+<!-- Slot 2 -->
+<div class="text-zinc-400 p-2 border border-zinc-800 hover:border-lime-400 hover:bg-zinc-800 transition-colors flex flex-col items-center justify-center w-14 h-14 relative bg-surface-container-low">
+<span class="absolute top-1 left-1 font-label-bold text-[10px]">2</span>
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">bomb</span>
+<span class="absolute bottom-0 right-1 font-label-bold text-[10px] text-primary-container">x2</span>
+</div>
+<!-- Slot 3 (Empty) -->
+<div class="text-zinc-600 p-2 border border-zinc-800 border-dashed hover:border-zinc-600 transition-colors flex flex-col items-center justify-center w-14 h-14 relative bg-surface-container-low/50">
+<span class="absolute top-1 left-1 font-label-bold text-[10px]">3</span>
+</div>
+<!-- Slot 4 (Empty) -->
+<div class="text-zinc-600 p-2 border border-zinc-800 border-dashed hover:border-zinc-600 transition-colors flex flex-col items-center justify-center w-14 h-14 relative bg-surface-container-low/50">
+<span class="absolute top-1 left-1 font-label-bold text-[10px]">4</span>
+</div>
+<!-- Slot 5 (Empty) -->
+<div class="text-zinc-600 p-2 border border-zinc-800 border-dashed hover:border-zinc-600 transition-colors flex flex-col items-center justify-center w-14 h-14 relative bg-surface-container-low/50">
+<span class="absolute top-1 left-1 font-label-bold text-[10px]">5</span>
+</div>
+</div>
+<!-- Bottom-Right: Weapon Status -->
+<div class="flex flex-col items-end gap-1 pointer-events-auto">
+<span class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-[0.2em]">AR-15 TACTICAL</span>
+<div class="flex items-end gap-4 bg-surface-container-high/80 backdrop-blur-sm border-2 border-surface-variant p-4 clip-tr bg-noise">
+<!-- Ammo Numeric -->
+<div class="flex items-baseline gap-1">
+<span class="font-data-num text-data-num text-primary-container drop-shadow-[0_0_8px_rgba(42,255,0,0.6)]">30</span>
+<span class="font-headline-md text-headline-md text-surface-variant">/</span>
+<span class="font-headline-md text-headline-md text-on-surface-variant">120</span>
+</div>
+<!-- Ammo Visualization (Tally marks) -->
+<div class="flex gap-[2px] h-8 items-end ml-2 opacity-80">
+<!-- Example visualization for ~30 rounds -->
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-full bg-primary-container"></div>
+<div class="w-1 h-4 bg-surface-variant ml-1"></div>
+<div class="w-1 h-4 bg-surface-variant"></div>
+<div class="w-1 h-4 bg-surface-variant"></div>
+</div>
+</div>
+<!-- Fire Mode Indicator -->
+<div class="flex gap-2 mt-1">
+<div class="w-2 h-2 bg-primary-container rounded-sm shadow-[0_0_5px_rgba(42,255,0,0.8)]"></div>
+<div class="w-2 h-2 bg-primary-container rounded-sm shadow-[0_0_5px_rgba(42,255,0,0.8)]"></div>
+<div class="w-2 h-2 bg-primary-container rounded-sm shadow-[0_0_5px_rgba(42,255,0,0.8)]"></div>
+<span class="font-label-bold text-[10px] text-primary-container ml-1 uppercase">AUTO</span>
+</div>
+</div>
+</div>
+</div>
+</body></html>
