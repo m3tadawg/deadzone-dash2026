@@ -8,7 +8,11 @@
     "range": 2,
     "effects": [
       "bleeding"
-    ]
+    ],
+    "muzzleOffset": {
+      "forward": 0.8,
+      "right": 0.28
+    }
   },
   {
     "id": "pistol",
@@ -21,8 +25,8 @@
       "knockback"
     ],
     "muzzleOffset": {
-      "forward": 0.5,
-      "right": 0.0
+      "forward": 0.75,
+      "right": 0.32
     }
   },
   {
@@ -37,8 +41,8 @@
       "stun"
     ],
     "muzzleOffset": {
-      "forward": 0.5,
-      "right": 0.0
+      "forward": 1.15,
+      "right": 0.34
     }
   },
   {
@@ -49,8 +53,8 @@
     "fireRate": 100,
     "range": 40,
     "muzzleOffset": {
-      "forward": 0.5,
-      "right": 0.0
+      "forward": 1.3,
+      "right": 0.34
     }
   },
   {
@@ -59,7 +63,11 @@
     "damage": 200,
     "type": "projectile",
     "fireRate": 1500,
-    "range": 60
+    "range": 60,
+    "muzzleOffset": {
+      "forward": 1.32,
+      "right": 0.34
+    }
   },
   {
     "id": "molotov",
@@ -67,7 +75,11 @@
     "damage": 10,
     "type": "thrown",
     "fireRate": 1000,
-    "range": 20
+    "range": 20,
+    "muzzleOffset": {
+      "forward": 0.45,
+      "right": 0.3
+    }
   },
   {
     "id": "grenade",
@@ -75,6 +87,10 @@
     "damage": 150,
     "type": "thrown",
     "fireRate": 1000,
-    "range": 25
+    "range": 25,
+    "muzzleOffset": {
+      "forward": 0.4,
+      "right": 0.3
+    }
   }
 ]
