@@ -41,7 +41,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   const slotNumber = Number.parseInt(key, 10);
-  if (!Number.isNaN(slotNumber) && slotNumber >= 1 && slotNumber <= 5 && socket.readyState === WebSocket.OPEN) {
+  if (!e.repeat && !Number.isNaN(slotNumber) && slotNumber >= 1 && slotNumber <= 5 && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "switchWeaponSlot", slotIndex: slotNumber - 1 }));
   }
 });
