@@ -8,6 +8,7 @@ const AISystem = require("./systems/AISystem");
 const ZombieCombatSystem = require("./systems/ZombieCombatSystem");
 const ZombieRangedAttackSystem = require("./systems/ZombieRangedAttackSystem");
 const ZombieProjectileSystem = require("./systems/ZombieProjectileSystem");
+const ZombieAbilitySystem = require("./systems/ZombieAbilitySystem");
 
 const CombatSystem = require("./systems/CombatSystem");
 const playerConfig = require("./data/player.json");
@@ -210,6 +211,9 @@ setInterval(() => {
 
     // Zombie ranged attacks
     ZombieRangedAttackSystem.update(zombie, players, projectiles, deltaTime);
+
+    // Boss special abilities
+    ZombieAbilitySystem.update(zombies, players, projectiles, deltaTime);
 
     // Status effects
     StatusEffectSystem.update(zombie, deltaTime);

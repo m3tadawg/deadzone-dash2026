@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DeadZone Dash — Character Creator</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/"
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Root ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e0e0e;
+      --panel-bg:  rgba(18, 18, 18, 0.96);
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #c0392b;
+      --accent2:   #e67e22;
+      --text:      #d4cec6;
+      --muted:     #6b6560;
+      --label:     #9a9490;
+      --ui-font:   'Rajdhani', sans-serif;
+      --mono:      'Share Tech Mono', monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ui-font);
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      grid-template-rows: 48px 1fr 56px;
+      height: 100vh;
+    }
+
+    /* ── Header ── */
+    #header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: rgba(12,12,12,0.98);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #header h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    #header .tag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Side Panels ── */
+    .panel {
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .panel:last-of-type { border-right: none; border-left: 1px solid var(--border); }
+
+    .panel-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-section h3 {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Swatch Grid ── */
+    .swatch-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .swatch {
+      width: 26px; height: 26px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s, transform 0.12s;
+      flex-shrink: 0;
+    }
+
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.active { border-color: #fff; }
+
+    /* ── Select Chips ── */
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .chip {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--label);
+      font-family: var(--ui-font);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Sliders ── */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .slider-row label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--label);
+      min-width: 72px;
+    }
+
+    .slider-row input[type=range] {
+      flex: 1;
+      appearance: none;
+      height: 3px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .slider-row input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .slider-row .val {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      min-width: 30px;
+      text-align: right;
+    }
+
+    /* ── Toggle ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .toggle-row label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--label);
+      flex: 1;
+    }
+
+    .toggle {
+      width: 36px; height: 20px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+
+    .toggle input:checked + .toggle-track { background: var(--accent); }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: left 0.18s;
+    }
+
+    .toggle input:checked ~ .toggle-thumb { left: 19px; }
+
+    /* ── Viewport ── */
+    #viewport {
+      position: relative;
+      overflow: hidden;
+      background: #0b0b0b;
+    }
+
+    #viewport canvas { display: block; width: 100% !important; height: 100% !important; }
+
+    /* ── Viewport Overlays ── */
+    #vp-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ── Footer ── */
+    #footer {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 0 20px;
+      background: rgba(10,10,10,0.98);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      font-family: var(--ui-font);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover { background: #a93226; }
+
+    .btn.accent2 {
+      background: transparent;
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    .btn.accent2:hover { background: rgba(230,126,34,0.12); }
+
+    /* ── Config output panel ── */
+    #config-out {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: #7eb87a;
+      padding: 10px 12px;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre;
+      line-height: 1.5;
+      margin-top: 6px;
+      display: none;
+    }
+
+    #config-out.visible { display: block; }
+
+    /* ── Preset pills ── */
+    .preset-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 5px 11px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--label);
+      font-family: var(--ui-font);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <h1>☣ DeadZone Dash — Character Creator</h1>
+    <span class="tag">v4 · Low-Poly Survivor System · Drag to rotate</span>
+  </header>
+
+  <!-- ══════════ LEFT PANEL ══════════ -->
+  <aside class="panel" id="panel-left">
+
+    <!-- Presets -->
+    <div class="panel-section">
+      <h3>Quick Presets</h3>
+      <div class="preset-row">
+        <button class="preset-btn" data-preset="scout">Scout</button>
+        <button class="preset-btn" data-preset="raider">Raider</button>
+        <button class="preset-btn" data-preset="survivor">Survivor</button>
+        <button class="preset-btn" data-preset="militia">Militia</button>
+        <button class="preset-btn" data-preset="nomad">Nomad</button>
+        <button class="preset-btn" data-preset="shadow">Shadow</button>
+      </div>
+    </div>
+
+    <!-- Skin Tone -->
+    <div class="panel-section">
+      <h3>Skin Tone</h3>
+      <div class="swatch-row" id="skin-swatches"></div>
+    </div>
+
+    <!-- Hair Colour -->
+    <div class="panel-section">
+      <h3>Hair Colour</h3>
+      <div class="swatch-row" id="hair-col-swatches"></div>
+    </div>
+
+    <!-- Hair Style -->
+    <div class="panel-section">
+      <h3>Hair Style</h3>
+      <div class="chip-row" id="hair-chips"></div>
+    </div>
+
+    <!-- Beard -->
+    <div class="panel-section">
+      <h3>Beard / Facial Hair</h3>
+      <div class="chip-row" id="beard-chips"></div>
+    </div>
+
+    <!-- Scar -->
+    <div class="panel-section">
+      <h3>Battle Marks</h3>
+      <div class="toggle-row">
+        <label>Scar</label>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-scar" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══════════ VIEWPORT ══════════ -->
+  <main id="viewport">
+    <div id="vp-hint">LEFT-DRAG ROTATE · SCROLL ZOOM · RIGHT-DRAG PAN</div>
+  </main>
+
+  <!-- ══════════ RIGHT PANEL ══════════ -->
+  <aside class="panel" id="panel-right">
+
+    <!-- Shirt -->
+    <div class="panel-section">
+      <h3>Shirt / Jacket</h3>
+      <div class="swatch-row" id="shirt-swatches"></div>
+    </div>
+
+    <!-- Trousers -->
+    <div class="panel-section">
+      <h3>Trousers</h3>
+      <div class="swatch-row" id="trouser-swatches"></div>
+    </div>
+
+    <!-- Hat -->
+    <div class="panel-section">
+      <h3>Headwear</h3>
+      <div class="chip-row" id="hat-chips"></div>
+      <div class="swatch-row" id="hat-col-swatches" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Backpack -->
+    <div class="panel-section">
+      <h3>Backpack / Carry</h3>
+      <div class="chip-row" id="bp-chips"></div>
+    </div>
+
+    <!-- Shoulder Gear -->
+    <div class="panel-section">
+      <h3>Shoulder Gear</h3>
+      <div class="chip-row" id="shoulder-chips"></div>
+    </div>
+
+    <!-- Proportions -->
+    <div class="panel-section">
+      <h3>Proportions</h3>
+      <div class="slider-row">
+        <label>Head Size</label>
+        <input type="range" id="sl-head" min="0.75" max="1.35" step="0.01" value="1.0" />
+        <span class="val" id="sl-head-val">1.00</span>
+      </div>
+      <div class="slider-row">
+        <label>Body Width</label>
+        <input type="range" id="sl-body" min="0.75" max="1.35" step="0.01" value="1.0" />
+        <span class="val" id="sl-body-val">1.00</span>
+      </div>
+    </div>
+
+    <!-- Config Output -->
+    <div class="panel-section">
+      <h3>Config JSON</h3>
+      <pre id="config-out"></pre>
+    </div>
+
+  </aside>
+
+  <!-- ── Footer ── -->
+  <footer id="footer">
+    <button class="btn primary" id="btn-random">🎲 Randomize</button>
+    <button class="btn" id="btn-export">📋 Copy Config</button>
+    <button class="btn accent2" id="btn-json">{ } Show JSON</button>
+    <button class="btn" id="btn-reset">↺ Reset</button>
+  </footer>
+
+</div>
+
+<script type="module" src="./preview.js"></script>
+</body>
+</html>

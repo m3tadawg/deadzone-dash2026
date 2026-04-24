@@ -114,5 +114,131 @@
       "steerProbeDistance": 1.1,
       "maxStuckTimeMs": 900
     }
+  },
+  {
+    "type": "screamer",
+    "hp": 450,
+    "speed": 0.65,
+    "spawnWeight": 0.02,
+    "spawnCost": 4.5,
+    "unlockWave": 10,
+    "attack": {
+      "damage": 12,
+      "range": 1.4,
+      "cooldownMs": 1000
+    },
+    "abilities": [
+      {
+        "id": "frenzy_aura",
+        "type": "aura",
+        "targetType": "zombie",
+        "radius": 10,
+        "effect": {
+          "type": "frenzy",
+          "modifiers": { "speed": 1.4 },
+          "duration": 0.5
+        }
+      },
+      {
+        "id": "sonic_blast",
+        "type": "periodic",
+        "targetType": "player",
+        "radius": 8,
+        "cooldownMs": 5000,
+        "windupMs": 1000,
+        "effect": {
+          "type": "disoriented",
+          "modifiers": { "speed": 0.5 },
+          "duration": 3
+        }
+      }
+    ],
+    "aiProfile": {
+      "speedMultiplier": 0.95,
+      "radius": 0.75,
+      "arrivalDistance": 4,
+      "steerProbeDistance": 1.5,
+      "maxStuckTimeMs": 800
+    }
+  },
+  {
+    "type": "plague_lord",
+    "hp": 850,
+    "speed": 0.42,
+    "spawnWeight": 0.015,
+    "spawnCost": 6.0,
+    "unlockWave": 15,
+    "attack": {
+      "damage": 25,
+      "range": 1.8,
+      "cooldownMs": 1800
+    },
+    "abilities": [
+      {
+        "id": "toxic_miasma",
+        "type": "aura",
+        "targetType": "player",
+        "radius": 6,
+        "effect": {
+          "type": "poisoned",
+          "duration": 1,
+          "tickRate": 0.5,
+          "effect": { "damagePerTick": 2 }
+        }
+      },
+      {
+        "id": "acid_spray",
+        "type": "periodic",
+        "targetType": "player",
+        "radius": 12,
+        "cooldownMs": 4000,
+        "windupMs": 800,
+        "projectileId": "acid_spit",
+        "projectileCount": 5
+      }
+    ],
+    "aiProfile": {
+      "speedMultiplier": 0.8,
+      "radius": 1.2,
+      "arrivalDistance": 1.5,
+      "steerProbeDistance": 2.0,
+      "maxStuckTimeMs": 1500
+    }
+  },
+  {
+    "type": "colossus",
+    "hp": 2500,
+    "speed": 0.35,
+    "spawnWeight": 0.01,
+    "spawnCost": 12.0,
+    "unlockWave": 20,
+    "attack": {
+      "damage": 45,
+      "range": 2.5,
+      "cooldownMs": 2500
+    },
+    "abilities": [
+      {
+        "id": "ground_slam",
+        "type": "periodic",
+        "targetType": "player",
+        "radius": 6,
+        "cooldownMs": 7000,
+        "windupMs": 1200,
+        "damage": 20,
+        "effect": {
+          "type": "stunned",
+          "modifiers": { "speed": 0 },
+          "duration": 1.5
+        }
+      }
+    ],
+    "aiProfile": {
+      "speedMultiplier": 0.7,
+      "radius": 1.8,
+      "arrivalDistance": 1.0,
+      "steerProbeDistance": 2.5,
+      "maxStuckTimeMs": 2000
+    }
   }
 ]
