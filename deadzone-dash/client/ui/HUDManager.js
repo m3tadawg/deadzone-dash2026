@@ -13,6 +13,11 @@ function prettyWeaponName(weaponId) {
     .join(" ");
 }
 
+function prettyItemName(itemId) {
+  if (!itemId) return "Empty";
+  return String(itemId).replaceAll("_", " ");
+}
+
 class HUDManager {
   constructor() {
     this.els = {
@@ -33,6 +38,7 @@ class HUDManager {
     this._maxHealth = 100;
     this._maxStamina = 100;
     this._inventorySignature = "";
+    this._activeSlot = 0;
     this._inventorySlots = [];
 
     for (let i = 0; i < 5; i += 1) {
@@ -95,19 +101,21 @@ class HUDManager {
     const reserveAmmo = localPlayer.ammo?.reserve;
     this.els.ammoCount.textContent = currentAmmo == null ? "∞" : `${currentAmmo}/${reserveAmmo ?? 0}`;
 
-    this.renderInventory(localPlayer.inventory || FALLBACK_INVENTORY);
+    this.renderInventory(localPlayer.inventory || FALLBACK_INVENTORY, localPlayer.selectedWeaponSlot || 0);
   }
 
-  renderInventory(inventory = FALLBACK_INVENTORY) {
+  renderInventory(inventory = FALLBACK_INVENTORY, selectedSlot = 0) {
     const slots = inventory.slice(0, 5);
     while (slots.length < 5) slots.push(null);
 
-    const inventorySignature = slots.map((item) => item ?? "").join("|");
+    const inventorySignature = `${slots.map((item) => item ?? "").join("|")}::${selectedSlot}`;
     if (inventorySignature === this._inventorySignature) return;
 
     this._inventorySignature = inventorySignature;
+    this._activeSlot = selectedSlot;
     slots.forEach((item, index) => {
-      this._inventorySlots[index].textContent = item ? String(item).replaceAll("_", " ") : "Empty";
+      this._inventorySlots[index].textContent = prettyItemName(item);
+      this._inventorySlots[index].parentElement.classList.toggle("active", index === this._activeSlot);
     });
   }
 }

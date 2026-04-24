@@ -9,8 +9,7 @@ const PlayerStatsSystem = {
       ammo: {
         current: null,
         reserve: null
-      },
-      inventory: playerConfig.startingInventory || [null, null, null, null, null]
+      }
     };
   },
 

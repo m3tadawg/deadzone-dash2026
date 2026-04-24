@@ -13,14 +13,18 @@ const ZombieAbilitySystem = require("./systems/ZombieAbilitySystem");
 const CombatSystem = require("./systems/CombatSystem");
 const playerConfig = require("./data/player.json");
 const weaponsConfig = require("./data/weapons.json");
+const weaponLootConfig = require("./data/weapon_loot.json");
 const WorldSystem = require("./systems/WorldSystem");
 const PlayerStatsSystem = require("./systems/PlayerStatsSystem");
+const WeaponLoadoutSystem = require("./systems/WeaponLoadoutSystem");
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const combatSystem = new CombatSystem(weaponsConfig);
+const weaponLoadoutSystem = new WeaponLoadoutSystem(weaponsConfig, weaponLootConfig);
+const gameStartTime = Date.now();
 
 // Cleanly handle Chrome DevTools config probes to prevent CSP console errors
 app.get("/.well-known/*", (req, res) => res.status(404).end());
@@ -35,8 +39,12 @@ app.use(express.static(path.join(__dirname, "../client")));
 let players = {};
 let zombies = {};
 let projectiles = {};
+let activeHazards = [];
+let activeDamageZones = [];
 
 function createPlayer(id) {
+  const loadout = weaponLoadoutSystem.createInitialLoadout("pistol");
+
   return {
     id,
     x: 0,
@@ -47,9 +55,11 @@ function createPlayer(id) {
     health: playerConfig.maxHealth,
     statusEffects: [],
     dead: false,
-    weapon: "pistol",
+    ...PlayerStatsSystem.createInitialStats(),
+    weapon: loadout.weapon,
+    selectedWeaponSlot: loadout.selectedWeaponSlot,
     lastShotTime: 0,
-    ...PlayerStatsSystem.createInitialStats()
+    inventory: loadout.inventory
   };
 }
 
@@ -119,9 +129,43 @@ wss.on("connection", (ws) => {
 
         const result = combatSystem.handleShoot(player, zombies);
         if (result) {
-            if (result.didKill) {
+            (result.eliminatedZombieIds || []).forEach(() => {
                 PlayerStatsSystem.creditKill(player);
+            });
+
+            const area = WorldSystem.getAreaAt(player.x, player.z);
+            const lootResult = (result.eliminatedZombieIds || []).reduce((latest, _zombieId) => {
+              const awarded = weaponLoadoutSystem.tryAwardZombieLoot(
+                player,
+                Date.now() - gameStartTime,
+                area?.lootMultiplier || 1
+              );
+              return awarded || latest;
+            }, null);
+
+            if (lootResult) {
+              const weaponName = lootResult.weaponId.replaceAll("_", " ");
+              ws.send(JSON.stringify({
+                type: "notification",
+                text: lootResult.isNew
+                  ? `Looted ${weaponName} (slot ${lootResult.slot + 1})`
+                  : `Switched to ${weaponName}`
+              }));
             }
+
+            if (result.damageZones?.length) {
+              const now = Date.now();
+              result.damageZones.forEach((zone) => {
+                activeDamageZones.push({
+                  ...zone,
+                  expiresAt: now + (zone.ttlMs || 1000)
+                });
+              });
+            }
+            if (result.hazards?.length) {
+              activeHazards.push(...result.hazards);
+            }
+
             const tracerMsg = JSON.stringify({ type: "tracer", shooterId: id, ...result });
             wss.clients.forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -129,6 +173,10 @@ wss.on("connection", (ws) => {
                 }
             });
         }
+      } else if (data.type === "switchWeaponSlot") {
+        const player = players[id];
+        if (!player || player.dead) return;
+        weaponLoadoutSystem.switchToSlot(player, Number(data.slotIndex));
       } else if (data.type === "searchStart") {
         const player = players[id];
         if (!player || player.dead) return;
@@ -222,6 +270,24 @@ setInterval(() => {
   // === UPDATE PROJECTILES ===
   ZombieProjectileSystem.update(projectiles, players, deltaTime);
 
+  // === UPDATE PLAYER HAZARDS (e.g. molotov fire pools) ===
+  activeHazards.forEach((hazard) => {
+    if (hazard.type !== "fire") return;
+    Object.values(zombies).forEach((zombie) => {
+      if (zombie.dead) return;
+      const dx = zombie.x - hazard.x;
+      const dz = zombie.z - hazard.z;
+      if ((dx * dx + dz * dz) <= hazard.radius * hazard.radius) {
+        zombie.health -= hazard.dps * deltaTime;
+        if (zombie.health <= 0) {
+          zombie.dead = true;
+        }
+      }
+    });
+  });
+  activeHazards = activeHazards.filter((hazard) => hazard.expiresAt > currentTime);
+  activeDamageZones = activeDamageZones.filter((zone) => zone.expiresAt > currentTime);
+
   // === CLEANUP DEAD ENTITIES ===
   for (let id in zombies) {
     if (zombies[id].dead) {
@@ -235,6 +301,7 @@ setInterval(() => {
     players,
     zombies,
     projectiles,
+    damageZones: activeDamageZones,
     hud: {
       wave: AISpawner.currentWaveNumber || 1,
       maxHealth: playerConfig.maxHealth,

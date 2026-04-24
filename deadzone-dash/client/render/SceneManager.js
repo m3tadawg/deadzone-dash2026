@@ -65,9 +65,13 @@ export class SceneManager {
         this.weaponVisualCatalog = null;
         this.zombieVisualCatalog = null;
         this.projectileVisualCatalog = null;
+        this.weaponsCatalog = null;
         this.weaponVisualsLoaded = this.loadWeaponVisuals();
         this.zombieVisualsLoaded = this.loadZombieVisuals();
         this.projectileVisualsLoaded = this.loadProjectileVisuals();
+        this.weaponsLoaded = this.loadWeapons();
+        this.damageZoneMeshes = {};
+        this.throwPreview = this.createThrowPreview();
 
         window.addEventListener("resize", () => this.handleResize());
     }
@@ -113,6 +117,44 @@ export class SceneManager {
             console.warn("Unable to load projectile visual catalog, using fallback visuals.", err);
             this.projectileVisualCatalog = { default: { radius: 0.2, color: "#88ff88", emissive: "#1c7a1c" } };
         }
+    }
+
+    async loadWeapons() {
+        try {
+            const response = await fetch("./data/weapons.json");
+            if (!response.ok) throw new Error(`Failed to load weapons (${response.status})`);
+            const weaponList = await response.json();
+            this.weaponsCatalog = Object.fromEntries(weaponList.map((weapon) => [weapon.id, weapon]));
+        } catch (err) {
+            console.warn("Unable to load weapon catalog for throw previews.", err);
+            this.weaponsCatalog = {};
+        }
+    }
+
+    createThrowPreview() {
+        const group = new THREE.Group();
+        group.visible = false;
+
+        const rangeMat = new THREE.LineDashedMaterial({ color: 0xffc266, dashSize: 0.6, gapSize: 0.35 });
+        const rangeGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 1.05, 0),
+            new THREE.Vector3(0, 1.05, 0)
+        ]);
+        const rangeLine = new THREE.Line(rangeGeo, rangeMat);
+        rangeLine.computeLineDistances();
+        group.add(rangeLine);
+
+        const areaGeo = new THREE.RingGeometry(0.95, 1, 48);
+        const areaMat = new THREE.MeshBasicMaterial({ color: 0xff7a18, transparent: true, opacity: 0.32, side: THREE.DoubleSide });
+        const areaRing = new THREE.Mesh(areaGeo, areaMat);
+        areaRing.rotation.x = -Math.PI / 2;
+        areaRing.position.y = 1.02;
+        group.add(areaRing);
+
+        group.userData.rangeLine = rangeLine;
+        group.userData.areaRing = areaRing;
+        this.scene.add(group);
+        return group;
     }
 
     applyZombieCastCue(mesh, isCasting) {
@@ -249,6 +291,35 @@ export class SceneManager {
                 delete this.projectileMeshes[id];
             }
         });
+
+        const snapshotZones = snapshot.damageZones || [];
+        const activeZoneIds = new Set(snapshotZones.map((zone) => zone.id));
+        snapshotZones.forEach((zone) => {
+            let zoneMesh = this.damageZoneMeshes[zone.id];
+            if (!zoneMesh) {
+                const ringGeo = new THREE.RingGeometry(0.96, 1, 48);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: zone.color || "#ff7a18",
+                    transparent: true,
+                    opacity: 0.35,
+                    side: THREE.DoubleSide
+                });
+                zoneMesh = new THREE.Mesh(ringGeo, ringMat);
+                zoneMesh.rotation.x = -Math.PI / 2;
+                this.damageZoneMeshes[zone.id] = zoneMesh;
+                this.scene.add(zoneMesh);
+            }
+            zoneMesh.scale.set(zone.radius, zone.radius, 1);
+            zoneMesh.position.set(zone.x, 1.02, zone.z);
+        });
+
+        Object.keys(this.damageZoneMeshes).forEach((zoneId) => {
+            if (activeZoneIds.has(zoneId)) return;
+            this.scene.remove(this.damageZoneMeshes[zoneId]);
+            this.damageZoneMeshes[zoneId].geometry.dispose();
+            this.damageZoneMeshes[zoneId].material.dispose();
+            delete this.damageZoneMeshes[zoneId];
+        });
         
         // Remove inactive targets
         for (const [id, target] of this.targets.entries()) {
@@ -373,6 +444,49 @@ export class SceneManager {
             geometry.dispose();
             material.dispose();
         }, 100);
+    }
+
+    updateThrowPreview(snapshot, localPlayerId, aimTarget) {
+        if (!this.throwPreview) return;
+        if (!snapshot || !aimTarget || !localPlayerId) {
+            this.throwPreview.visible = false;
+            return;
+        }
+
+        const localPlayer = snapshot.players?.[localPlayerId];
+        const weapon = localPlayer ? this.weaponsCatalog?.[localPlayer.weapon] : null;
+        if (!weapon || weapon.type !== "thrown") {
+            this.throwPreview.visible = false;
+            return;
+        }
+
+        const dx = aimTarget.x - localPlayer.x;
+        const dz = aimTarget.z - localPlayer.z;
+        const length = Math.sqrt(dx * dx + dz * dz);
+        if (length < 0.0001) {
+            this.throwPreview.visible = false;
+            return;
+        }
+
+        const maxRange = weapon.range || 10;
+        const clampedDistance = Math.min(maxRange, length);
+        const targetX = localPlayer.x + (dx / length) * clampedDistance;
+        const targetZ = localPlayer.z + (dz / length) * clampedDistance;
+
+        const zoneRadius = weapon.damageRadius || 4;
+        const color = weapon.zoneStyle?.color || "#ff7a18";
+        const rangeLine = this.throwPreview.userData.rangeLine;
+        const areaRing = this.throwPreview.userData.areaRing;
+
+        rangeLine.geometry.setFromPoints([
+            new THREE.Vector3(localPlayer.x, 1.05, localPlayer.z),
+            new THREE.Vector3(targetX, 1.05, targetZ)
+        ]);
+        rangeLine.computeLineDistances();
+        areaRing.material.color.set(color);
+        areaRing.scale.set(zoneRadius, zoneRadius, 1);
+        areaRing.position.set(targetX, 1.02, targetZ);
+        this.throwPreview.visible = true;
     }
 
     checkNearbySearchable(x, z, radius) {
