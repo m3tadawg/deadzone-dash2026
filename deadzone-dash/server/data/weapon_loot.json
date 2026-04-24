@@ -1,0 +1,33 @@
+{
+  "searchDurationMs": 1800,
+  "dropChance": 0.42,
+  "maxWeaponSlots": 5,
+  "tiers": [
+    {
+      "minElapsedSeconds": 0,
+      "weights": {
+        "knife": 1,
+        "pistol": 5,
+        "shotgun": 1
+      }
+    },
+    {
+      "minElapsedSeconds": 150,
+      "weights": {
+        "shotgun": 4,
+        "machine_gun": 2,
+        "grenade": 2,
+        "molotov": 2
+      }
+    },
+    {
+      "minElapsedSeconds": 360,
+      "weights": {
+        "machine_gun": 4,
+        "grenade": 3,
+        "molotov": 3,
+        "rocket_launcher": 1
+      }
+    }
+  ]
+}

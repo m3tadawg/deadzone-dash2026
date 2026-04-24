@@ -39,6 +39,11 @@ window.addEventListener("keydown", (e) => {
       }
       keys[key] = true;
   }
+
+  const slotNumber = Number.parseInt(key, 10);
+  if (!Number.isNaN(slotNumber) && slotNumber >= 1 && slotNumber <= 5 && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "switchWeaponSlot", slotIndex: slotNumber - 1 }));
+  }
 });
 
 window.addEventListener("keyup", (e) => {
@@ -69,6 +74,17 @@ window.addEventListener("mousedown", () => {
 window.addEventListener("mouseup", () => {
     isMouseDown = false;
 });
+
+window.addEventListener("wheel", (e) => {
+  if (!latestSnapshot || !sceneManager.localPlayerId || socket.readyState !== WebSocket.OPEN) return;
+  const localPlayer = latestSnapshot.players?.[sceneManager.localPlayerId];
+  if (!localPlayer) return;
+
+  const slotCount = localPlayer.inventory?.length || 5;
+  const direction = e.deltaY > 0 ? 1 : -1;
+  const nextSlot = (((localPlayer.selectedWeaponSlot || 0) + direction) % slotCount + slotCount) % slotCount;
+  socket.send(JSON.stringify({ type: "switchWeaponSlot", slotIndex: nextSlot }));
+}, { passive: true });
 
 let lastTime = performance.now();
 
@@ -119,6 +135,7 @@ function loop() {
         hud.updateFromSnapshot(latestSnapshot, sceneManager.localPlayerId);
         snapshotChanged = false;
     }
+    sceneManager.updateThrowPreview(latestSnapshot, sceneManager.localPlayerId, aimTarget);
     sceneManager.update(dt);
   }
 
