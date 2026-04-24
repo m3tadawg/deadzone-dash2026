@@ -297,14 +297,16 @@ export class SceneManager {
         snapshotZones.forEach((zone) => {
             let zoneMesh = this.damageZoneMeshes[zone.id];
             if (!zoneMesh) {
-                const ringGeo = new THREE.RingGeometry(0.96, 1, 48);
+                if (!this._sharedZoneGeo) {
+                    this._sharedZoneGeo = new THREE.RingGeometry(0.96, 1, 48);
+                }
                 const ringMat = new THREE.MeshBasicMaterial({
                     color: zone.color || "#ff7a18",
                     transparent: true,
                     opacity: 0.35,
                     side: THREE.DoubleSide
                 });
-                zoneMesh = new THREE.Mesh(ringGeo, ringMat);
+                zoneMesh = new THREE.Mesh(this._sharedZoneGeo, ringMat);
                 zoneMesh.rotation.x = -Math.PI / 2;
                 this.damageZoneMeshes[zone.id] = zoneMesh;
                 this.scene.add(zoneMesh);
@@ -316,7 +318,6 @@ export class SceneManager {
         Object.keys(this.damageZoneMeshes).forEach((zoneId) => {
             if (activeZoneIds.has(zoneId)) return;
             this.scene.remove(this.damageZoneMeshes[zoneId]);
-            this.damageZoneMeshes[zoneId].geometry.dispose();
             this.damageZoneMeshes[zoneId].material.dispose();
             delete this.damageZoneMeshes[zoneId];
         });

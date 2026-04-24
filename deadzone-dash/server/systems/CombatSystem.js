@@ -131,6 +131,7 @@ class CombatSystem {
             hazards.push({
                 id: `hazard-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 type: 'fire',
+                ownerId: player.id,
                 sourceWeaponId: weapon.id,
                 x: impactX,
                 z: impactZ,

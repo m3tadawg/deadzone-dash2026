@@ -281,6 +281,17 @@ setInterval(() => {
         zombie.health -= hazard.dps * deltaTime;
         if (zombie.health <= 0) {
           zombie.dead = true;
+          // Attribute kill to owner
+          const owner = players[hazard.ownerId];
+          if (owner) {
+            PlayerStatsSystem.creditKill(owner);
+            const area = WorldSystem.getAreaAt(zombie.x, zombie.z);
+            weaponLoadoutSystem.tryAwardZombieLoot(
+              owner,
+              Date.now() - gameStartTime,
+              area?.lootMultiplier || 1
+            );
+          }
         }
       }
     });

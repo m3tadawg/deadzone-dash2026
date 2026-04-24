@@ -2,6 +2,9 @@ class WeaponLoadoutSystem {
   constructor(weaponsConfig = [], lootConfig = {}) {
     this.weaponById = new Map(weaponsConfig.map((weapon) => [weapon.id, weapon]));
     this.lootConfig = lootConfig;
+    if (this.lootConfig.tiers) {
+      this.lootConfig.tiers.sort((a, b) => (a.minElapsedSeconds || 0) - (b.minElapsedSeconds || 0));
+    }
   }
 
   createInitialLoadout(defaultWeapon = "pistol") {
@@ -39,8 +42,7 @@ class WeaponLoadoutSystem {
   }
 
   pickLootWeapon(elapsedSeconds) {
-    const tiers = [...(this.lootConfig.tiers || [])]
-      .sort((a, b) => (a.minElapsedSeconds || 0) - (b.minElapsedSeconds || 0));
+    const tiers = this.lootConfig.tiers || [];
 
     let activeTier = tiers[0] || null;
     tiers.forEach((tier) => {
