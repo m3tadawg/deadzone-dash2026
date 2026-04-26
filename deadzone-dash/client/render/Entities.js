@@ -146,7 +146,40 @@ function buildZombiePart(partDef) {
     return mesh;
 }
 
-export function createZombieMesh(type = "default", zombieVisualCatalog = null) {
+export function createZombieMesh(type = "default", zombieVisualCatalog = null, zombieModels = null) {
+    // 1. Try to use GLB model if available
+    let modelTemplate = zombieModels ? zombieModels[type] : null;
+    
+    // Fallback 'default' to 'shambler' if no specific model exists for 'default'
+    if (!modelTemplate && type === "default" && zombieModels) {
+        modelTemplate = zombieModels["shambler"];
+    }
+
+    if (modelTemplate) {
+        const model = modelTemplate.clone();
+        
+        // Wrap in an Object3D to ensure we can apply offsets if needed without breaking interpolation
+        const root = new THREE.Object3D();
+        
+        // Rotate 180 degrees as requested (Math.PI) because models face opposite to Three.js default lookAt
+        model.rotation.y = Math.PI;
+
+        // Lift the model slightly so torsos don't clip into the ground
+        model.position.y = 0.1;
+
+        // Disable all shadows for the zombie model
+        model.traverse(node => {
+            if (node.isMesh) {
+                node.castShadow = false;
+                node.receiveShadow = false;
+            }
+        });
+        
+        root.add(model);
+        return root;
+    }
+
+    // 2. Fallback to procedural simple shapes
     const visual = (zombieVisualCatalog && zombieVisualCatalog[type])
         || (zombieVisualCatalog && zombieVisualCatalog.default)
         || {
