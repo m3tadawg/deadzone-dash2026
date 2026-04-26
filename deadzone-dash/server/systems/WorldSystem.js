@@ -255,22 +255,42 @@ class WorldSystem {
     getNearbySearchable(x, z, radius) {
         const cx = Math.floor(x / this.chunkSize);
         const cz = Math.floor(z / this.chunkSize);
-        const chunk = this.grid.get(`${cx},${cz}`);
-        if (!chunk) return null;
-
+        
         let closest = null;
-        let minDist = radius;
+        let minDistSq = radius * radius;
 
-        chunk.prefabs.forEach((p) => {
-            const def = this.catalog.prefabs[p.type];
-            if (def && def.searchable) {
-                const dist = Math.sqrt((x - p.x) ** 2 + (z - p.z) ** 2);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = p;
-                }
+        // Check current and neighboring chunks
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const chunk = this.grid.get(`${cx + dx},${cz + dz}`);
+                if (!chunk) continue;
+
+                chunk.prefabs.forEach((p) => {
+                    const def = this.catalog.prefabs[p.type];
+                    if (def && def.searchable) {
+                        // Use OBB check logic to find distance to edge
+                        const dx_p = x - p.x;
+                        const dz_p = z - p.z;
+                        const cos = Math.cos(-p.rotation);
+                        const sin = Math.sin(-p.rotation);
+                        const localX = dx_p * cos - dz_p * sin;
+                        const localZ = dx_p * sin + dz_p * cos;
+
+                        const hW = def.width / 2;
+                        const hD = def.depth / 2;
+                        const closestX = Math.max(-hW, Math.min(hW, localX));
+                        const closestZ = Math.max(-hD, Math.min(hD, localZ));
+
+                        const distSq = (localX - closestX) ** 2 + (localZ - closestZ) ** 2;
+                        
+                        if (distSq < minDistSq) {
+                            minDistSq = distSq;
+                            closest = p;
+                        }
+                    }
+                });
             }
-        });
+        }
         return closest;
     }
 }

@@ -4,5 +4,7 @@
   "height": 2,
   "depth": 2,
   "color": "#4a2a1a",
-  "collision": true
+  "collision": true,
+  "searchable": true,
+  "searchTime": 1.5
 }

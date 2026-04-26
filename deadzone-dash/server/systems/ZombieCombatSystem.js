@@ -53,7 +53,7 @@ function applyAttackEffects(target, effects) {
 }
 
 module.exports = {
-    update(zombie, players, deltaTime) {
+    update(zombie, players, deltaTime, hitCallback = null) {
         if (!zombie || zombie.dead) return;
 
         const attackProfile = getAttackProfile(zombie);
@@ -67,6 +67,10 @@ module.exports = {
 
         const target = pickClosestTargetInRange(zombie, players, attackProfile.range);
         if (!target) return;
+
+        if (hitCallback) {
+            hitCallback(target.x, target.z, "player");
+        }
 
         target.health -= attackProfile.damage;
         if (target.health <= 0) {

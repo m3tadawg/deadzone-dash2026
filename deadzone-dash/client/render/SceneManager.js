@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
 import { createPlayerMesh, createZombieMesh, createProjectileMesh, createDroppedItemMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
+import { ParticleSystem } from "./ParticleSystem.js";
 
 const PLAYER_COLORS = [
     0x3498db, // Blue
@@ -79,7 +80,7 @@ export class SceneManager {
         this.weaponsLoaded = this.loadWeapons();
         this.damageZoneMeshes = {};
         this.hazardMeshes = {};
-        this.emberSystem = this.initEmberSystem();
+        this.particles = new ParticleSystem(this.scene);
         this.throwPreview = this.createThrowPreview();
 
         window.addEventListener("resize", () => this.handleResize());
@@ -197,32 +198,6 @@ export class SceneManager {
         return group;
     }
     
-    initEmberSystem() {
-        const count = 400;
-        const geometry = new THREE.BoxGeometry(0.08, 0.08, 0.08);
-        const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 });
-        const mesh = new THREE.InstancedMesh(geometry, material, count);
-        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        
-        // Random initial states
-        const dummy = new THREE.Object3D();
-        for (let i = 0; i < count; i++) {
-            dummy.position.set(0, -10, 0); // Hide initially
-            dummy.updateMatrix();
-            mesh.setMatrixAt(i, dummy.matrix);
-        }
-        
-        this.scene.add(mesh);
-        
-        // Ember metadata
-        mesh.userData.states = Array.from({ length: count }, () => ({
-            life: Math.random(),
-            speed: 0.5 + Math.random() * 1.5,
-            offset: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5)
-        }));
-        
-        return mesh;
-    }
 
     applyZombieCastCue(mesh, isCasting) {
         mesh.traverse((node) => {
@@ -422,6 +397,7 @@ export class SceneManager {
                     const ringMat = new THREE.MeshBasicMaterial({ color: "#ff8800", transparent: true, opacity: 0.8 });
                     const ring = new THREE.Mesh(ringGeo, ringMat);
                     mesh.add(ring);
+                    mesh.userData.type = 'fire';
                 } else {
                     // Fallback
                     mesh = new THREE.Group();
@@ -492,65 +468,42 @@ export class SceneManager {
             mesh.rotation.y += dt * 8;
         });
 
+        // Update dropped items
         const time = Date.now() * 0.002;
         Object.values(this.droppedItemMeshes).forEach((mesh) => {
             mesh.rotation.y += dt * 2;
             mesh.position.y = 0.5 + Math.sin(time) * 0.2;
         });
 
-        // Animate Fire & Embers
+        // Update Particles
+        this.particles.update(dt);
+
+        // Animate Fire & Embers via Particle System
         const hazards = Object.values(this.hazardMeshes);
-        if (this.emberSystem) {
-            const dummy = new THREE.Object3D();
-            const states = this.emberSystem.userData.states;
-            const count = this.emberSystem.count;
-            const time = Date.now() * 0.001;
-
-            for (let i = 0; i < count; i++) {
-                const s = states[i];
-                s.life += dt * s.speed;
-                if (s.life > 1) {
-                    s.life = 0;
-                    // Pick a random active hazard to emit from
-                    if (hazards.length > 0) {
-                        const h = hazards[Math.floor(Math.random() * hazards.length)];
-                        s.sourcePos = new THREE.Vector3(h.position.x, 1.01, h.position.z);
-                        const angle = Math.random() * Math.PI * 2;
-                        const dist = Math.sqrt(Math.random()) * (h.userData.radius || 1);
-                        s.offset.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
-                    } else {
-                        s.sourcePos = null;
-                    }
+        const timeNow = Date.now() * 0.001;
+        
+        hazards.forEach(h => {
+            if (h.userData.type === 'fire') {
+                // Emit fire particles
+                const emitCount = Math.floor(Math.random() * 3);
+                for(let i=0; i<emitCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.sqrt(Math.random()) * (h.userData.radius || 1);
+                    const pos = new THREE.Vector3(
+                        h.position.x + Math.cos(angle) * dist,
+                        1.05,
+                        h.position.z + Math.sin(angle) * dist
+                    );
+                    this.particles.emit("fire", pos, { count: 1 });
                 }
 
-                if (s.sourcePos) {
-                    const swirl = Math.sin(time * 2 + i) * 0.2;
-                    dummy.position.copy(s.sourcePos).add(s.offset);
-                    dummy.position.y += s.life * 2.5;
-                    dummy.position.x += swirl;
-                    dummy.position.z += Math.cos(time * 2 + i) * 0.2;
-                    
-                    const scale = (1 - s.life) * 0.8;
-                    dummy.scale.set(scale, scale, scale);
-                    dummy.rotation.set(time + i, time * 0.5, 0);
-                    dummy.updateMatrix();
-                    this.emberSystem.setMatrixAt(i, dummy.matrix);
-                } else {
-                    dummy.position.set(0, -10, 0);
-                    dummy.updateMatrix();
-                    this.emberSystem.setMatrixAt(i, dummy.matrix);
-                }
-            }
-            this.emberSystem.instanceMatrix.needsUpdate = true;
-            
-            // Pulse fire pools
-            hazards.forEach(h => {
+                // Pulse fire pools
                 if (h.children[0]) { // The ring
-                    h.children[0].material.opacity = 0.5 + Math.sin(time * 10) * 0.3;
+                    h.children[0].material.opacity = 0.5 + Math.sin(timeNow * 10) * 0.3;
                 }
-                h.material.opacity = 0.3 + Math.sin(time * 5) * 0.1;
-            });
-        }
+                h.material.opacity = 0.3 + Math.sin(timeNow * 5) * 0.1;
+            }
+        });
 
         // Elastic Camera Follow & Biome Effects
         if (this.localPlayerId) {
@@ -579,6 +532,60 @@ export class SceneManager {
                 }
             }
         }
+
+        // Global Environmental Effects (Rain/Fog)
+        this.updateEnvironment(dt);
+    }
+
+    updateEnvironment(dt) {
+        if (!this.localPlayerId) return;
+        const player = this.playerMeshes[this.localPlayerId];
+        if (!player) return;
+
+        // 1. Rain (if enabled or based on biome)
+        // Let's assume some biomes have rain
+        let isRaining = false;
+        if (this.mapData) {
+            const cx = Math.floor(player.position.x / this.mapData.chunkSize);
+            const cz = Math.floor(player.position.z / this.mapData.chunkSize);
+            const chunk = this.mapData.grid[`${cx},${cz}`];
+            if (chunk) {
+                const biome = this.mapData.config.biomes[chunk.biome];
+                if (biome.name === "Wasteland" || biome.name === "DeadZone") {
+                    isRaining = true; 
+                }
+            }
+        }
+
+        if (isRaining) {
+            // Spawn rain in a box around player
+            for (let i = 0; i < 5; i++) {
+                const pos = new THREE.Vector3(
+                    player.position.x + (Math.random() - 0.5) * 40,
+                    20,
+                    player.position.z + (Math.random() - 0.5) * 40
+                );
+                this.particles.emit("rain", pos, { count: 1 });
+            }
+        }
+
+        // 2. Ambient Fog/Dust (Disabled to prevent visual clutter)
+        /*
+        if (Math.random() < 0.1) {
+            const pos = new THREE.Vector3(
+                player.position.x + (Math.random() - 0.5) * 50,
+                0.5 + Math.random() * 2,
+                player.position.z + (Math.random() - 0.5) * 50
+            );
+            this.particles.emit("smoke", pos, { 
+                count: 1, 
+                size: 4 + Math.random() * 4, 
+                life: 4 + Math.random() * 2,
+                color: 0x888888,
+                opacity: 0.1
+            });
+        }
+        */
     }
 
     render() {
@@ -621,6 +628,11 @@ export class SceneManager {
         const muzzleWorld = this.getWeaponMuzzleWorldPosition(shooterId);
         const startY = muzzleWorld?.y ?? 1.3;
         const startPoint = muzzleWorld || new THREE.Vector3(startX, startY, startZ);
+        
+        // Muzzle Flash
+        this.particles.emit("muzzle_flash", startPoint, { count: 1 });
+        this.particles.emit("smoke", startPoint, { count: 2, size: 0.5, life: 0.5 });
+
         const points = [
             startPoint,
             new THREE.Vector3(endX, startY, endZ)
@@ -683,20 +695,42 @@ export class SceneManager {
     checkNearbySearchable(x, z, radius) {
         if (!this.mapData) return false;
         
-        // Find the current chunk
         const cx = Math.floor(x / this.mapData.chunkSize);
         const cz = Math.floor(z / this.mapData.chunkSize);
-        const chunk = this.mapData.grid[`${cx},${cz}`];
-        if (!chunk) return false;
-
+        const radiusSq = radius * radius;
         const prefabDefs = this.mapData.config.prefabs;
-        return chunk.prefabs.some(p => {
-            const def = prefabDefs[p.type];
-            if (def && def.searchable) {
-                const dist = Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(z - p.z, 2));
-                return dist < radius;
+
+        // Check current and neighboring chunks
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const chunk = this.mapData.grid[`${cx + dx},${cz + dz}`];
+                if (!chunk) continue;
+
+                const hasSearchable = chunk.prefabs.some(p => {
+                    const def = prefabDefs[p.type];
+                    if (def && def.searchable) {
+                        const dx_p = x - p.x;
+                        const dz_p = z - p.z;
+                        const cos = Math.cos(-p.rotation);
+                        const sin = Math.sin(-p.rotation);
+                        const localX = dx_p * cos - dz_p * sin;
+                        const localZ = dx_p * sin + dz_p * cos;
+
+                        const hW = def.width / 2;
+                        const hD = def.depth / 2;
+                        const closestX = Math.max(-hW, Math.min(hW, localX));
+                        const closestZ = Math.max(-hD, Math.min(hD, localZ));
+
+                        const distSq = (localX - closestX) ** 2 + (localZ - closestZ) ** 2;
+                        return distSq < radiusSq;
+                    }
+                    return false;
+                });
+
+                if (hasSearchable) return true;
             }
-            return false;
-        });
+        }
+
+        return false;
     }
 }

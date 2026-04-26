@@ -23,7 +23,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const combatSystem = new CombatSystem(weaponsConfig);
+const combatSystem = new CombatSystem(weaponsConfig, broadcastHit);
 const weaponLoadoutSystem = new WeaponLoadoutSystem(weaponsConfig, weaponLootConfig);
 const gameStartTime = Date.now();
 
@@ -59,8 +59,40 @@ function createPlayer(id) {
     dead: false,
     ...PlayerStatsSystem.createInitialStats(),
     ...loadout, // This now includes weapon, selectedWeaponSlot, inventory, AND ammo
-    lastShotTime: 0
+    lastShotTime: 0,
+    isSearching: false,
+    searchTarget: null,
+    searchStartTime: 0,
+    searchProgress: 0
   };
+}
+
+function completeSearch(player) {
+  if (!player || !player.searchTarget) return;
+
+  const area = WorldSystem.getAreaAt(player.x, player.z);
+  const lootId = weaponLoadoutSystem.rollForLoot(
+    (Date.now() - gameStartTime) / 1000,
+    (area?.lootMultiplier || 1) * 2.0 // Boosted loot from searching
+  );
+
+  if (lootId) {
+    const dropId = Math.random().toString(36).substr(2, 9);
+    droppedItems[dropId] = {
+      id: dropId,
+      weaponId: lootId,
+      x: player.x,
+      z: player.z,
+      createdAt: Date.now()
+    };
+    broadcast({ type: "notification", text: "Found something!" });
+  } else {
+    broadcast({ type: "notification", text: "Nothing found..." });
+  }
+
+  player.isSearching = false;
+  player.searchTarget = null;
+  player.searchProgress = 0;
 }
 
 function createZombie(id) {
@@ -214,6 +246,24 @@ wss.on("connection", (ws) => {
   });
 });
 
+function broadcast(msg) {
+    const data = JSON.stringify(msg);
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(data);
+        }
+    });
+}
+
+function broadcastHit(x, z, type = "zombie") {
+    broadcast({
+        type: "hit",
+        x,
+        z,
+        hitType: type
+    });
+}
+
 // ======================
 // GAME LOOP
 // ======================
@@ -236,9 +286,12 @@ setInterval(() => {
       // Normalize to prevent faster diagonal movement
       const length = Math.sqrt(player.vx * player.vx + player.vz * player.vz);
       if (length > 0) {
-        const speedMultiplier = WorldSystem.getSpeedMultiplier(player.x, player.z);
-        const nextX = player.x + (player.vx / length) * (playerConfig.baseSpeed * speedMultiplier) * deltaTime;
-        const nextZ = player.z + (player.vz / length) * (playerConfig.baseSpeed * speedMultiplier) * deltaTime;
+        const terrainSpeed = WorldSystem.getSpeedMultiplier(player.x, player.z);
+        const baseSpeed = StatusEffectSystem.applyModifiers(player, playerConfig.baseSpeed, 'movementSpeed');
+        const finalSpeed = baseSpeed * terrainSpeed;
+        
+        const nextX = player.x + (player.vx / length) * finalSpeed * deltaTime;
+        const nextZ = player.z + (player.vz / length) * finalSpeed * deltaTime;
         
         // Circular collider check (radius 0.8)
         if (!WorldSystem.isPositionBlocked(nextX, nextZ, 0.8)) {
@@ -258,6 +311,24 @@ setInterval(() => {
     PlayerStatsSystem.updateStamina(player, deltaTime);
 
     StatusEffectSystem.update(player, deltaTime);
+
+    // === SEARCH PROGRESS ===
+    if (player.isSearching && player.searchTarget) {
+      const def = WorldSystem.catalog.prefabs[player.searchTarget.type];
+      const searchTime = def?.searchTime ?? 3;
+
+      if (searchTime === 0) {
+        completeSearch(player);
+      } else {
+        const elapsed = (currentTime - player.searchStartTime) / 1000;
+        player.searchProgress = Math.min(100, (elapsed / searchTime) * 100);
+        if (elapsed >= searchTime) {
+          completeSearch(player);
+        }
+      }
+    } else {
+      player.searchProgress = 0;
+    }
 
     // === PICKUP CHECK ===
     const PICKUP_RADIUS = 1.5;
@@ -323,7 +394,7 @@ setInterval(() => {
     AISystem.update(zombie, players, deltaTime);
 
     // Zombie melee attacks
-    ZombieCombatSystem.update(zombie, players, deltaTime);
+    ZombieCombatSystem.update(zombie, players, deltaTime, broadcastHit);
 
     // Zombie ranged attacks
     ZombieRangedAttackSystem.update(zombie, players, projectiles, deltaTime);

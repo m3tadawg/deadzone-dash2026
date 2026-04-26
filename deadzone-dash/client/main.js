@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { SceneManager } from "./render/SceneManager.js";
 import { HUDManager } from "./ui/HUDManager.js";
 
@@ -20,7 +21,16 @@ socket.onmessage = (msg) => {
     latestSnapshot = data;
     snapshotChanged = true;
   } else if (data.type === "tracer") {
-    sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ, data.shooterId);
+    if (data.rays) {
+      data.rays.forEach(ray => {
+        sceneManager.addTracer(ray.startX, ray.startZ, ray.endX, ray.endZ, data.shooterId);
+      });
+    } else if (data.startX !== undefined) {
+      sceneManager.addTracer(data.startX, data.startZ, data.endX, data.endZ, data.shooterId);
+    }
+  } else if (data.type === "hit") {
+    const effectType = data.hitType === "player" ? "blood_red" : "blood_green";
+    sceneManager.particles.emit(effectType, new THREE.Vector3(data.x, 1.2, data.z));
   } else if (data.type === "notification") {
     hud.showNotification(data.text);
   }
@@ -136,6 +146,12 @@ function loop() {
             hud.setSearchPromptVisible(hasSearchable);
         }
         hud.updateFromSnapshot(latestSnapshot, sceneManager.localPlayerId);
+        
+        // Update search progress
+        const lp = latestSnapshot.players[sceneManager.localPlayerId];
+        if (lp) {
+            hud.updateSearchProgress(lp.searchProgress || 0);
+        }
         snapshotChanged = false;
     }
     sceneManager.updateThrowPreview(latestSnapshot, sceneManager.localPlayerId, aimTarget);

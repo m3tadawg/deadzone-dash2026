@@ -35,7 +35,9 @@ class HUDManager {
       ammoCount: document.getElementById("ammoCount"),
       inventoryBar: document.getElementById("inventoryBar"),
       notifications: document.getElementById("notifications"),
-      vitalsPanel: document.getElementById("vitalsPanel")
+      vitalsPanel: document.getElementById("vitalsPanel"),
+      searchProgressContainer: document.getElementById("searchProgressContainer"),
+      searchProgressFill: document.getElementById("searchProgressFill")
     };
     this._notificationTimeout = null;
     this._maxHealth = 100;
@@ -59,6 +61,20 @@ class HUDManager {
     }
 
     this.renderInventory(FALLBACK_INVENTORY);
+  }
+
+  updateSearchProgress(percent) {
+    if (!this.els.searchProgressContainer || !this.els.searchProgressFill) return;
+
+    if (percent > 0 && percent < 100) {
+      this.els.searchProgressContainer.style.display = "flex";
+      this.els.searchProgressFill.style.width = `${percent}%`;
+      // Hide prompt while searching
+      if (this.els.searchPrompt) this.els.searchPrompt.style.display = "none";
+    } else {
+      this.els.searchProgressContainer.style.display = "none";
+      this.els.searchProgressFill.style.width = "0%";
+    }
   }
 
   setSearchPromptVisible(isVisible) {
