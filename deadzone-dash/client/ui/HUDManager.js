@@ -13,9 +13,11 @@ function prettyWeaponName(weaponId) {
     .join(" ");
 }
 
-function prettyItemName(itemId) {
-  if (!itemId) return "Empty";
-  return String(itemId).replaceAll("_", " ");
+function prettyItemName(item) {
+  if (!item) return "Empty";
+  const id = typeof item === "object" ? item.id : item;
+  if (!id) return "Empty";
+  return String(id).replaceAll("_", " ");
 }
 
 class HUDManager {
@@ -32,7 +34,8 @@ class HUDManager {
       weaponName: document.getElementById("weaponName"),
       ammoCount: document.getElementById("ammoCount"),
       inventoryBar: document.getElementById("inventoryBar"),
-      notifications: document.getElementById("notifications")
+      notifications: document.getElementById("notifications"),
+      vitalsPanel: document.getElementById("vitalsPanel")
     };
     this._notificationTimeout = null;
     this._maxHealth = 100;
@@ -87,8 +90,23 @@ class HUDManager {
     const health = Math.max(0, Math.round(localPlayer.health ?? 0));
     const stamina = Math.max(0, Math.round(localPlayer.stamina ?? maxStamina));
 
+    const healthPercent = clampPercent(health, maxHealth);
     this.els.healthText.textContent = `${health} / ${maxHealth}`;
-    this.els.healthFill.style.width = `${clampPercent(health, maxHealth)}%`;
+    this.els.healthFill.style.width = `${healthPercent}%`;
+
+    // Toggle Critical Status
+    if (healthPercent <= 25) {
+      this.els.vitalsPanel.classList.remove("neon-cyan");
+      this.els.vitalsPanel.classList.add("health-critical");
+      this.els.healthFill.classList.replace("fill-cyan", "fill-red");
+      this.els.healthText.classList.replace("text-cyan", "text-red");
+    } else {
+      this.els.vitalsPanel.classList.remove("health-critical");
+      this.els.vitalsPanel.classList.add("neon-cyan");
+      this.els.healthFill.classList.replace("fill-red", "fill-cyan");
+      this.els.healthText.classList.replace("text-red", "text-cyan");
+    }
+
     this.els.staminaText.textContent = `${stamina} / ${maxStamina}`;
     this.els.staminaFill.style.width = `${clampPercent(stamina, maxStamina)}%`;
 

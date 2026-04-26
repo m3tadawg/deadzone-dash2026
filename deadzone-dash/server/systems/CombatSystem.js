@@ -9,6 +9,20 @@ class CombatSystem {
         const weapon = this.weaponsConfig.find((w) => w.id === player.weapon);
 
         if (!weapon || now - player.lastShotTime < weapon.fireRate) return null;
+        
+        // Ammo Check (if not melee)
+        if (weapon.type !== 'melee') {
+            const currentAmmo = player.ammo ? player.ammo.current : 0;
+            if (currentAmmo <= 0) return null; // No ammo
+            
+            // Consume ammo
+            player.ammo.current--;
+            
+            // Sync back to inventory
+            const invItem = player.inventory[player.selectedWeaponSlot];
+            if (invItem) invItem.clip = player.ammo.current;
+        }
+
         player.lastShotTime = now;
 
         if (weapon.type === 'thrown') {

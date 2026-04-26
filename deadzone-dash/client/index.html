@@ -16,40 +16,72 @@
 
 <body>
     <canvas id="game"></canvas>
+
+    <div id="vignette"></div>
+    <div id="decalContainer">
+        <h1 id="decalText">DEADZONE</h1>
+    </div>
+
     <div class="hud-layer">
-        <div id="vitalsPanel" class="panel">
-            <div class="bar-row">
-                <div class="bar-label"><span>Health</span><span id="healthText">100 / 100</span></div>
-                <div class="bar-track"><div id="healthFill" class="bar-fill" style="width:100%"></div></div>
-            </div>
-            <div class="bar-row">
-                <div class="bar-label"><span>Stamina</span><span id="staminaText">100 / 100</span></div>
-                <div class="bar-track"><div id="staminaFill" class="bar-fill" style="width:100%"></div></div>
-            </div>
-        </div>
-        <div id="statsPanel" class="panel">
-            <div class="stats-grid">
-                <span class="label">Wave</span><span class="value" id="waveValue">1</span>
-                <span class="label">Kills</span><span class="value" id="killsValue">0</span>
-                <span class="label">Score</span><span class="value" id="scoreValue">0</span>
-            </div>
-        </div>
-        <div id="combatPanel" class="panel">
-            <div id="combatTop">
-                <div>
-                    <div class="combat-label">Weapon</div>
-                    <div id="weaponName">Pistol</div>
+
+        <div class="hud-top">
+            <div id="vitalsPanel" class="glass-panel neon-cyan">
+                <div class="stat-group">
+                    <div class="stat-header">
+                        <span class="label text-cyan">Integrity</span>
+                        <span id="healthText" class="value-sub text-cyan">100 / 100</span>
+                    </div>
+                    <div id="healthContainer" class="bar-bg">
+                        <div id="healthFill" class="bar-fill fill-cyan" style="width:100%"></div>
+                    </div>
                 </div>
-                <div class="combat-right">
-                    <div class="combat-label">Ammo</div>
-                    <div id="ammoCount">∞</div>
+
+                <div class="stat-group">
+                    <div class="stat-header">
+                        <span class="label">Stamina</span>
+                        <span id="staminaText" class="value-sub">100 / 100</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div id="staminaFill" class="bar-fill fill-white" style="width:100%"></div>
+                    </div>
                 </div>
             </div>
-            <div id="inventoryBar"></div>
+
+            <div id="statsPanel" class="glass-panel flex-row">
+                <div class="stat-col">
+                    <div class="label">Wave</div>
+                    <div id="waveValue" class="massive-number text-white">1</div>
+                </div>
+                <div class="stat-col">
+                    <div class="label">Kills</div>
+                    <div id="killsValue" class="massive-number text-cyan">0</div>
+                </div>
+                <div class="stat-col">
+                    <div class="label">Score</div>
+                    <div id="scoreValue" class="massive-number text-white">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="centerScreen">
+            <div id="notifications"></div>
+            <div id="searchPrompt" class="prompt-pulse">Press [E] to Search</div>
+        </div>
+
+        <div class="hud-bottom">
+            <div></div>
+
+            <div id="inventoryBar" class="glass-panel inventory-grid">
+            </div>
+
+            <div id="weaponPanel" class="glass-panel neon-cyan combat-info">
+                <div class="label">Equipped</div>
+                <div id="weaponName" class="weapon-name">Unknown</div>
+                <div id="ammoCount" class="massive-ammo text-cyan shadow-cyan">∞</div>
+            </div>
         </div>
     </div>
-    <div id="searchPrompt">Hold [E] to Search</div>
-    <div id="notifications"></div>
+
     <script type="module" src="main.js"></script>
 </body>
 

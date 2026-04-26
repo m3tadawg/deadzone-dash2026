@@ -194,6 +194,31 @@ If not → redesign it.
 
 ---
 
+# 12. LOOT SYSTEM CONTRACT
+
+All world-space items must follow the drop-and-collect flow:
+
+* **Spawning**: Items are spawned as `droppedItem` entities with a unique ID and a `weaponId` reference.
+* **Collection**: Players collect items via proximity (server-side check).
+* **Progression**: Drop rates must be tiered based on game duration (stored in `weapon_loot.json`).
+
+## RULE:
+👉 Never award loot directly to a player's inventory on kill. It must always be an intermediate world entity.
+
+---
+
+# 13. HAZARD SYSTEM CONTRACT
+
+Environmental hazards (Fire, Acid, Gas) must be separated into two components:
+
+1. **Logical Hazard**: Server-side data (`activeHazards`) that handles damage and status effect application.
+2. **Visual Zone**: Client-side representation (`damageZones` or `firePools`) synced via snapshot.
+
+## RULE:
+👉 Visuals must reflect the logical state. Use `InstancedMesh` for any mass-particle visuals (embers, sparks) to maintain performance.
+
+---
+
 # FINAL RULE
 
 If a system requires modifying another system’s code:

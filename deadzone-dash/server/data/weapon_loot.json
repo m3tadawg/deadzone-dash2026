@@ -1,32 +1,40 @@
 {
   "searchDurationMs": 1800,
-  "dropChance": 0.42,
+  "dropChance": 0.05,
   "maxWeaponSlots": 5,
   "tiers": [
     {
       "minElapsedSeconds": 0,
+      "dropChance": 0.05,
       "weights": {
+        "pistol": 3,
         "knife": 1,
-        "pistol": 5,
-        "shotgun": 1
+        "ammo_pack": 4,
+        "health_pack": 2
       }
     },
     {
       "minElapsedSeconds": 150,
+      "dropChance": 0.25,
       "weights": {
-        "shotgun": 4,
-        "machine_gun": 2,
-        "grenade": 2,
-        "molotov": 2
+        "shotgun": 3,
+        "machine_gun": 1,
+        "ammo_pack": 6,
+        "health_pack": 3,
+        "perk_damageBoost": 1,
+        "perk_speedBoost": 1
       }
     },
     {
       "minElapsedSeconds": 360,
+      "dropChance": 0.45,
       "weights": {
-        "machine_gun": 4,
-        "grenade": 3,
-        "molotov": 3,
-        "rocket_launcher": 1
+        "machine_gun": 3,
+        "rocket_launcher": 1,
+        "ammo_pack": 8,
+        "health_pack": 4,
+        "perk_damageBoost": 2,
+        "perk_speedBoost": 2
       }
     }
   ]

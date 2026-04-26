@@ -191,3 +191,34 @@ export function createProjectileMesh(type = "default", projectileVisualCatalog =
 
     return new THREE.Mesh(geometry, material);
 }
+
+export function createDroppedItemMesh(lootId, weaponVisualCatalog = null) {
+    let color = "#e74c3c"; // Default: Weapon Red
+    
+    if (lootId === "health_pack") {
+        color = "#2ecc71"; // Green
+    } else if (lootId === "ammo_pack") {
+        color = "#f1c40f"; // Yellow
+    } else if (lootId && String(lootId).startsWith("perk_")) {
+        color = "#9b59b6"; // Purple
+    } else {
+        // Weapon-specific color if defined
+        const visual = (weaponVisualCatalog && weaponVisualCatalog[lootId]);
+        if (visual) {
+            color = visual.color || (visual.parts && visual.parts[0] ? visual.parts[0].color : "#e74c3c");
+        }
+    }
+    
+    const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const material = new THREE.MeshStandardMaterial({ 
+        color: color,
+        emissive: color,
+        emissiveIntensity: 0.4
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    
+    return mesh;
+}

@@ -17,6 +17,7 @@ const weaponLootConfig = require("./data/weapon_loot.json");
 const WorldSystem = require("./systems/WorldSystem");
 const PlayerStatsSystem = require("./systems/PlayerStatsSystem");
 const WeaponLoadoutSystem = require("./systems/WeaponLoadoutSystem");
+const perksConfig = require("./data/perks.json");
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,7 @@ let zombies = {};
 let projectiles = {};
 let activeHazards = [];
 let activeDamageZones = [];
+let droppedItems = {};
 
 function createPlayer(id) {
   const loadout = weaponLoadoutSystem.createInitialLoadout("pistol");
@@ -56,10 +58,8 @@ function createPlayer(id) {
     statusEffects: [],
     dead: false,
     ...PlayerStatsSystem.createInitialStats(),
-    weapon: loadout.weapon,
-    selectedWeaponSlot: loadout.selectedWeaponSlot,
-    lastShotTime: 0,
-    inventory: loadout.inventory
+    ...loadout, // This now includes weapon, selectedWeaponSlot, inventory, AND ammo
+    lastShotTime: 0
   };
 }
 
@@ -129,29 +129,38 @@ wss.on("connection", (ws) => {
 
         const result = combatSystem.handleShoot(player, zombies);
         if (result) {
+            // Consumables logic: auto-reload next unit or remove if empty
+            const weapon = weaponLoadoutSystem.weaponById.get(player.weapon);
+            if (weapon && weapon.type === 'thrown') {
+                weaponLoadoutSystem.autoReload(player);
+            }
+            weaponLoadoutSystem.checkDepletion(player);
+
             (result.eliminatedZombieIds || []).forEach(() => {
                 PlayerStatsSystem.creditKill(player);
             });
 
             const area = WorldSystem.getAreaAt(player.x, player.z);
-            const lootResult = (result.eliminatedZombieIds || []).reduce((latest, _zombieId) => {
-              const awarded = weaponLoadoutSystem.tryAwardZombieLoot(
-                player,
-                Date.now() - gameStartTime,
+            (result.eliminatedZombieIds || []).forEach((zombieId) => {
+              const zombie = zombies[zombieId]; 
+              if (!zombie) return;
+
+              const weaponId = weaponLoadoutSystem.rollForLoot(
+                (Date.now() - gameStartTime) / 1000,
                 area?.lootMultiplier || 1
               );
-              return awarded || latest;
-            }, null);
-
-            if (lootResult) {
-              const weaponName = lootResult.weaponId.replaceAll("_", " ");
-              ws.send(JSON.stringify({
-                type: "notification",
-                text: lootResult.isNew
-                  ? `Looted ${weaponName} (slot ${lootResult.slot + 1})`
-                  : `Switched to ${weaponName}`
-              }));
-            }
+              
+              if (weaponId) {
+                const dropId = Math.random().toString(36).substr(2, 9);
+                droppedItems[dropId] = {
+                  id: dropId,
+                  weaponId,
+                  x: zombie.x,
+                  z: zombie.z,
+                  createdAt: Date.now()
+                };
+              }
+            });
 
             if (result.damageZones?.length) {
               const now = Date.now();
@@ -189,6 +198,10 @@ wss.on("connection", (ws) => {
             player.isSearching = false;
             player.searchTarget = null;
         }
+      } else if (data.type === "reload") {
+        const player = players[id];
+        if (!player || player.dead) return;
+        weaponLoadoutSystem.reload(player);
       }
     } catch (e) {
       console.error("Invalid message:", e);
@@ -245,6 +258,61 @@ setInterval(() => {
     PlayerStatsSystem.updateStamina(player, deltaTime);
 
     StatusEffectSystem.update(player, deltaTime);
+
+    // === PICKUP CHECK ===
+    const PICKUP_RADIUS = 1.5;
+    Object.values(droppedItems).forEach((item) => {
+      const dx = player.x - item.x;
+      const dz = player.z - item.z;
+      if ((dx * dx + dz * dz) <= PICKUP_RADIUS * PICKUP_RADIUS) {
+          const lootId = item.weaponId;
+          let notificationText = "";
+
+          if (lootId === "health_pack") {
+            player.health = Math.min(playerConfig.maxHealth, player.health + 25);
+            notificationText = "Picked up Health Pack (+25 HP)";
+          } else if (lootId === "ammo_pack") {
+            const success = weaponLoadoutSystem.refillAmmo(player);
+            notificationText = success ? "Refilled Ammo" : "Ammo Pack (No weapon to refill)";
+          } else if (lootId.startsWith("perk_")) {
+            const perkType = lootId.replace("perk_", "");
+            const perk = perksConfig.find(p => p.type === perkType);
+            if (perk) {
+              StatusEffectSystem.applyEffect(player, { 
+                type: perk.type, 
+                duration: perk.duration,
+                modifiers: perk.modifiers 
+              });
+              notificationText = `Acquired Perk: ${perkType.replaceAll("_", " ")}`;
+            }
+          } else {
+            // It's a weapon
+            const lootResult = weaponLoadoutSystem.addWeaponToInventory(player, lootId, false);
+            if (lootResult) {
+              const weaponName = lootResult.weaponId.replaceAll("_", " ");
+              const weapon = weaponLoadoutSystem.weaponById.get(lootResult.weaponId);
+              const isAmmoType = weapon && weapon.type !== 'melee';
+              
+              notificationText = lootResult.isNew
+                ? `Looted ${weaponName} (slot ${lootResult.slot + 1})`
+                : (isAmmoType ? `Found more ammo for ${weaponName}` : `Already carrying ${weaponName}`);
+            }
+          }
+
+          if (notificationText) {
+            const msg = JSON.stringify({
+              type: "notification",
+              text: notificationText
+            });
+            wss.clients.forEach(client => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(msg);
+              }
+            });
+          }
+        delete droppedItems[item.id];
+      }
+    });
   });
 
   // === UPDATE ZOMBIES ===
@@ -286,11 +354,20 @@ setInterval(() => {
           if (owner) {
             PlayerStatsSystem.creditKill(owner);
             const area = WorldSystem.getAreaAt(zombie.x, zombie.z);
-            weaponLoadoutSystem.tryAwardZombieLoot(
-              owner,
-              Date.now() - gameStartTime,
+            const weaponId = weaponLoadoutSystem.rollForLoot(
+              (Date.now() - gameStartTime) / 1000,
               area?.lootMultiplier || 1
             );
+            if (weaponId) {
+              const dropId = Math.random().toString(36).substr(2, 9);
+              droppedItems[dropId] = {
+                id: dropId,
+                weaponId,
+                x: zombie.x,
+                z: zombie.z,
+                createdAt: Date.now()
+              };
+            }
           }
         }
       }
@@ -298,6 +375,14 @@ setInterval(() => {
   });
   activeHazards = activeHazards.filter((hazard) => hazard.expiresAt > currentTime);
   activeDamageZones = activeDamageZones.filter((zone) => zone.expiresAt > currentTime);
+  
+  // Clean up old loot drops (60 seconds)
+  const ITEM_TTL = 60000;
+  Object.keys(droppedItems).forEach((id) => {
+    if (currentTime - droppedItems[id].createdAt > ITEM_TTL) {
+      delete droppedItems[id];
+    }
+  });
 
   // === CLEANUP DEAD ENTITIES ===
   for (let id in zombies) {
@@ -312,7 +397,9 @@ setInterval(() => {
     players,
     zombies,
     projectiles,
+    droppedItems,
     damageZones: activeDamageZones,
+    hazards: activeHazards,
     hud: {
       wave: AISpawner.currentWaveNumber || 1,
       maxHealth: playerConfig.maxHealth,

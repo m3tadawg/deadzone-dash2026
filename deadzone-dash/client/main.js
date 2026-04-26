@@ -27,7 +27,7 @@ socket.onmessage = (msg) => {
 };
 
 // Input State
-const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, e: false };
+const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, e: false, r: false };
 let lastSentDx = 0;
 let lastSentDz = 0;
 
@@ -36,6 +36,9 @@ window.addEventListener("keydown", (e) => {
   if (keys.hasOwnProperty(key)) {
       if (key === 'e' && !keys.e && socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: "searchStart" }));
+      }
+      if (key === 'r' && !keys.r && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "reload" }));
       }
       keys[key] = true;
   }

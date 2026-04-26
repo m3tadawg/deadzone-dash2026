@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
-import { createPlayerMesh, createZombieMesh, createProjectileMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
+import { createPlayerMesh, createZombieMesh, createProjectileMesh, createDroppedItemMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
 
 const PLAYER_COLORS = [
     0x3498db, // Blue
@@ -58,6 +58,7 @@ export class SceneManager {
         this.playerMeshes = {};
         this.zombieMeshes = {};
         this.projectileMeshes = {};
+        this.droppedItemMeshes = {};
         
         // Target data for interpolation
         this.targets = new Map();
@@ -71,6 +72,8 @@ export class SceneManager {
         this.projectileVisualsLoaded = this.loadProjectileVisuals();
         this.weaponsLoaded = this.loadWeapons();
         this.damageZoneMeshes = {};
+        this.hazardMeshes = {};
+        this.emberSystem = this.initEmberSystem();
         this.throwPreview = this.createThrowPreview();
 
         window.addEventListener("resize", () => this.handleResize());
@@ -155,6 +158,33 @@ export class SceneManager {
         group.userData.areaRing = areaRing;
         this.scene.add(group);
         return group;
+    }
+    
+    initEmberSystem() {
+        const count = 400;
+        const geometry = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+        const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 });
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        
+        // Random initial states
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < count; i++) {
+            dummy.position.set(0, -10, 0); // Hide initially
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+        }
+        
+        this.scene.add(mesh);
+        
+        // Ember metadata
+        mesh.userData.states = Array.from({ length: count }, () => ({
+            life: Math.random(),
+            speed: 0.5 + Math.random() * 1.5,
+            offset: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5)
+        }));
+        
+        return mesh;
     }
 
     applyZombieCastCue(mesh, isCasting) {
@@ -273,6 +303,17 @@ export class SceneManager {
             mesh.position.set(proj.x, 1.05, proj.z);
         });
 
+        const droppedItemMap = snapshot.droppedItems || {};
+        Object.entries(droppedItemMap).forEach(([id, item]) => {
+            let mesh = this.droppedItemMeshes[id];
+            if (!mesh) {
+                mesh = createDroppedItemMesh(item.weaponId, this.weaponVisualCatalog);
+                this.droppedItemMeshes[id] = mesh;
+                this.scene.add(mesh);
+            }
+            mesh.position.set(item.x, 0.5, item.z);
+        });
+
         // Cleanup stale meshes
         const cleanup = (meshes) => {
             Object.keys(meshes).forEach(id => {
@@ -289,6 +330,13 @@ export class SceneManager {
             if (!projectileMap[id]) {
                 this.scene.remove(this.projectileMeshes[id]);
                 delete this.projectileMeshes[id];
+            }
+        });
+
+        Object.keys(this.droppedItemMeshes).forEach(id => {
+            if (!droppedItemMap[id]) {
+                this.scene.remove(this.droppedItemMeshes[id]);
+                delete this.droppedItemMeshes[id];
             }
         });
 
@@ -313,6 +361,51 @@ export class SceneManager {
             }
             zoneMesh.scale.set(zone.radius, zone.radius, 1);
             zoneMesh.position.set(zone.x, 1.02, zone.z);
+        });
+        
+        // Sync Hazards (Persistent effects like Fire)
+        const snapshotHazards = snapshot.hazards || [];
+        const activeHazardIds = new Set(snapshotHazards.map(h => h.id));
+        
+        snapshotHazards.forEach((hazard) => {
+            let mesh = this.hazardMeshes[hazard.id];
+            if (!mesh) {
+                if (hazard.type === 'fire') {
+                    const geo = new THREE.CircleGeometry(1, 32);
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: "#ff4400",
+                        transparent: true,
+                        opacity: 0.45,
+                        side: THREE.DoubleSide
+                    });
+                    mesh = new THREE.Mesh(geo, mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    // Add a subtle outer ring for definition
+                    const ringGeo = new THREE.RingGeometry(0.98, 1, 32);
+                    const ringMat = new THREE.MeshBasicMaterial({ color: "#ff8800", transparent: true, opacity: 0.8 });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    mesh.add(ring);
+                } else {
+                    // Fallback
+                    mesh = new THREE.Group();
+                }
+                this.hazardMeshes[hazard.id] = mesh;
+                this.scene.add(mesh);
+            }
+            mesh.scale.set(hazard.radius, hazard.radius, 1);
+            mesh.position.set(hazard.x, 1.01, hazard.z);
+            mesh.userData.radius = hazard.radius; // For ember emission
+        });
+
+        Object.keys(this.hazardMeshes).forEach((id) => {
+            if (activeHazardIds.has(id)) return;
+            const mesh = this.hazardMeshes[id];
+            this.scene.remove(mesh);
+            mesh.traverse(n => {
+                if (n.geometry) n.geometry.dispose();
+                if (n.material) n.material.dispose();
+            });
+            delete this.hazardMeshes[id];
         });
 
         Object.keys(this.damageZoneMeshes).forEach((zoneId) => {
@@ -361,6 +454,66 @@ export class SceneManager {
         Object.values(this.projectileMeshes).forEach((mesh) => {
             mesh.rotation.y += dt * 8;
         });
+
+        const time = Date.now() * 0.002;
+        Object.values(this.droppedItemMeshes).forEach((mesh) => {
+            mesh.rotation.y += dt * 2;
+            mesh.position.y = 0.5 + Math.sin(time) * 0.2;
+        });
+
+        // Animate Fire & Embers
+        const hazards = Object.values(this.hazardMeshes);
+        if (this.emberSystem) {
+            const dummy = new THREE.Object3D();
+            const states = this.emberSystem.userData.states;
+            const count = this.emberSystem.count;
+            const time = Date.now() * 0.001;
+
+            for (let i = 0; i < count; i++) {
+                const s = states[i];
+                s.life += dt * s.speed;
+                if (s.life > 1) {
+                    s.life = 0;
+                    // Pick a random active hazard to emit from
+                    if (hazards.length > 0) {
+                        const h = hazards[Math.floor(Math.random() * hazards.length)];
+                        s.sourcePos = new THREE.Vector3(h.position.x, 1.01, h.position.z);
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.sqrt(Math.random()) * (h.userData.radius || 1);
+                        s.offset.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+                    } else {
+                        s.sourcePos = null;
+                    }
+                }
+
+                if (s.sourcePos) {
+                    const swirl = Math.sin(time * 2 + i) * 0.2;
+                    dummy.position.copy(s.sourcePos).add(s.offset);
+                    dummy.position.y += s.life * 2.5;
+                    dummy.position.x += swirl;
+                    dummy.position.z += Math.cos(time * 2 + i) * 0.2;
+                    
+                    const scale = (1 - s.life) * 0.8;
+                    dummy.scale.set(scale, scale, scale);
+                    dummy.rotation.set(time + i, time * 0.5, 0);
+                    dummy.updateMatrix();
+                    this.emberSystem.setMatrixAt(i, dummy.matrix);
+                } else {
+                    dummy.position.set(0, -10, 0);
+                    dummy.updateMatrix();
+                    this.emberSystem.setMatrixAt(i, dummy.matrix);
+                }
+            }
+            this.emberSystem.instanceMatrix.needsUpdate = true;
+            
+            // Pulse fire pools
+            hazards.forEach(h => {
+                if (h.children[0]) { // The ring
+                    h.children[0].material.opacity = 0.5 + Math.sin(time * 10) * 0.3;
+                }
+                h.material.opacity = 0.3 + Math.sin(time * 5) * 0.1;
+            });
+        }
 
         // Elastic Camera Follow & Biome Effects
         if (this.localPlayerId) {

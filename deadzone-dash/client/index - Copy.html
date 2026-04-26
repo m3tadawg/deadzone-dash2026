@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>DeadZone Dash</title>
+    <link rel="stylesheet" href="styles/hud.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+</head>
+
+<body>
+    <canvas id="game"></canvas>
+    <div class="hud-layer">
+        <div id="vitalsPanel" class="panel">
+            <div class="bar-row">
+                <div class="bar-label"><span>Health</span><span id="healthText">100 / 100</span></div>
+                <div class="bar-track"><div id="healthFill" class="bar-fill" style="width:100%"></div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label"><span>Stamina</span><span id="staminaText">100 / 100</span></div>
+                <div class="bar-track"><div id="staminaFill" class="bar-fill" style="width:100%"></div></div>
+            </div>
+        </div>
+        <div id="statsPanel" class="panel">
+            <div class="stats-grid">
+                <span class="label">Wave</span><span class="value" id="waveValue">1</span>
+                <span class="label">Kills</span><span class="value" id="killsValue">0</span>
+                <span class="label">Score</span><span class="value" id="scoreValue">0</span>
+            </div>
+        </div>
+        <div id="combatPanel" class="panel">
+            <div id="combatTop">
+                <div>
+                    <div class="combat-label">Weapon</div>
+                    <div id="weaponName">Pistol</div>
+                </div>
+                <div class="combat-right">
+                    <div class="combat-label">Ammo</div>
+                    <div id="ammoCount">∞</div>
+                </div>
+            </div>
+            <div id="inventoryBar"></div>
+        </div>
+    </div>
+    <div id="searchPrompt">Hold [E] to Search</div>
+    <div id="notifications"></div>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
