@@ -159,7 +159,7 @@ wss.on("connection", (ws) => {
             player.aimZ = data.aimZ;
         }
 
-        const result = combatSystem.handleShoot(player, zombies);
+        const result = combatSystem.handleShoot(player, zombies, data.isHeadshot);
         if (result) {
             // Consumables logic: auto-reload next unit or remove if empty
             const weapon = weaponLoadoutSystem.weaponById.get(player.weapon);
@@ -177,9 +177,14 @@ wss.on("connection", (ws) => {
               const zombie = zombies[zombieId]; 
               if (!zombie) return;
 
+              let dropMultiplier = area?.lootMultiplier || 1;
+              if (zombie.type === 'shambler' || zombie.type === 'runner') {
+                dropMultiplier *= 0.25; // Reduce drop rate by 75% for basic zombies
+              }
+
               const weaponId = weaponLoadoutSystem.rollForLoot(
                 (Date.now() - gameStartTime) / 1000,
-                area?.lootMultiplier || 1
+                dropMultiplier
               );
               
               if (weaponId) {
@@ -255,12 +260,13 @@ function broadcast(msg) {
     });
 }
 
-function broadcastHit(x, z, type = "zombie") {
+function broadcastHit(x, z, type = "zombie", isHeadshot = false) {
     broadcast({
         type: "hit",
         x,
         z,
-        hitType: type
+        hitType: type,
+        isHeadshot
     });
 }
 
@@ -425,9 +431,13 @@ setInterval(() => {
           if (owner) {
             PlayerStatsSystem.creditKill(owner);
             const area = WorldSystem.getAreaAt(zombie.x, zombie.z);
+            let dropMultiplier = area?.lootMultiplier || 1;
+            if (zombie.type === 'shambler' || zombie.type === 'runner') {
+              dropMultiplier *= 0.25; // Reduce drop rate by 75% for basic zombies
+            }
             const weaponId = weaponLoadoutSystem.rollForLoot(
               (Date.now() - gameStartTime) / 1000,
-              area?.lootMultiplier || 1
+              dropMultiplier
             );
             if (weaponId) {
               const dropId = Math.random().toString(36).substr(2, 9);

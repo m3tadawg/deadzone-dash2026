@@ -30,7 +30,8 @@ socket.onmessage = (msg) => {
     }
   } else if (data.type === "hit") {
     const effectType = data.hitType === "player" ? "blood_red" : "blood_green";
-    sceneManager.particles.emit(effectType, new THREE.Vector3(data.x, 1.2, data.z));
+    const height = data.isHeadshot ? 1.8 : 1.2;
+    sceneManager.particles.emit(effectType, new THREE.Vector3(data.x, height, data.z));
   } else if (data.type === "notification") {
     hud.showNotification(data.text);
   }
@@ -129,7 +130,7 @@ function loop() {
         
         if (isMouseDown) {
             if (currentTime - lastShootTime > 50) { // Max 20 times a second for shooting network packets
-                socket.send(JSON.stringify({ type: "shoot", aimX: aimTarget.x, aimZ: aimTarget.z }));
+                socket.send(JSON.stringify({ type: "shoot", aimX: aimTarget.x, aimZ: aimTarget.z, isHeadshot: aimTarget.isHeadshot }));
                 lastShootTime = currentTime;
             }
         }

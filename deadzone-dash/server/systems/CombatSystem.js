@@ -5,7 +5,7 @@ class CombatSystem {
         this.StatusEffectSystem = require('./StatusEffectSystem');
     }
 
-    handleShoot(player, zombies) {
+    handleShoot(player, zombies, isHeadshot = false) {
         const now = Date.now();
         const weapon = this.weaponsConfig.find((w) => w.id === player.weapon);
 
@@ -30,10 +30,10 @@ class CombatSystem {
             return this.handleThrown(player, zombies, weapon);
         }
 
-        return this.handleRaycastWeapon(player, zombies, weapon);
+        return this.handleRaycastWeapon(player, zombies, weapon, isHeadshot);
     }
 
-    handleRaycastWeapon(player, zombies, weapon) {
+    handleRaycastWeapon(player, zombies, weapon, isHeadshot) {
         const eliminatedZombieIds = [];
         const rays = [];
 
@@ -53,7 +53,12 @@ class CombatSystem {
 
         const numPellets = weapon.pellets || 1;
         const spread = weapon.spread || 0;
-        const modifiedDamage = this.StatusEffectSystem.applyModifiers(player, weapon.damage, 'outgoingDamage');
+        let modifiedDamage = this.StatusEffectSystem.applyModifiers(player, weapon.damage, 'outgoingDamage');
+        
+        if (isHeadshot) {
+            // Apply a 2x damage multiplier for headshots
+            modifiedDamage *= 2;
+        }
 
         for (let i = 0; i < numPellets; i++) {
             let bDirX = dirX;
@@ -101,7 +106,7 @@ class CombatSystem {
                 if (isKilled) eliminatedZombieIds.push(hitZombie.id);
                 
                 if (this.hitCallback) {
-                    this.hitCallback(hitZombie.x, hitZombie.z, "zombie");
+                    this.hitCallback(hitZombie.x, hitZombie.z, "zombie", isHeadshot);
                 }
 
                 endX = hitZombie.x;

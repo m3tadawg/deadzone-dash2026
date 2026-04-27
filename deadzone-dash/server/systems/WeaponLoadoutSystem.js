@@ -109,7 +109,22 @@ class WeaponLoadoutSystem {
 
     const existingIndex = player.inventory.findIndex(item => item && item.id === weaponId);
     if (existingIndex >= 0) {
-      // If we already have it, maybe we just refill or switch
+      // If we already have it, we add ammo to the reserve
+      const item = player.inventory[existingIndex];
+      if (weapon.type === 'thrown') {
+        item.reserve += 1;
+      } else if (weapon.type !== 'melee') {
+        item.reserve += (weapon.clipSize || 10) * 2;
+      }
+
+      // Sync HUD if this is the active weapon
+      if (player.weapon === item.id) {
+        player.ammo = {
+          current: item.clip,
+          reserve: item.reserve
+        };
+      }
+
       if (autoEquip) this.switchToSlot(player, existingIndex);
       return { weaponId, slot: existingIndex, isNew: false };
     }
@@ -134,16 +149,29 @@ class WeaponLoadoutSystem {
   }
 
   refillAmmo(player) {
-    const slotIndex = player.selectedWeaponSlot || 0;
-    const item = player.inventory[slotIndex];
-    if (!item) return false;
+    let slotIndex = player.selectedWeaponSlot || 0;
+    let item = player.inventory[slotIndex];
+    
+    // If holding melee or nothing, find the first valid ranged weapon to apply ammo to
+    if (!item || !this.weaponById.has(item.id) || this.weaponById.get(item.id).type === 'melee') {
+      const validIndex = player.inventory.findIndex(i => i && this.weaponById.get(i.id).type !== 'melee');
+      if (validIndex >= 0) {
+        slotIndex = validIndex;
+        item = player.inventory[slotIndex];
+      } else {
+        return false;
+      }
+    }
 
     const weapon = this.weaponById.get(item.id);
-    if (!weapon || weapon.type === 'melee') return false;
+    if (!weapon) return false;
 
-    // Full refill: both reserve and clip
-    item.reserve = weapon.maxReserve || 0;
-    item.clip = weapon.clipSize || 0;
+    // Add ammo instead of capping at max
+    if (weapon.type === 'thrown') {
+      item.reserve += 1;
+    } else {
+      item.reserve += (weapon.clipSize || 10) * 3;
+    }
     
     // Sync HUD if this is the active weapon
     if (player.weapon === item.id) {

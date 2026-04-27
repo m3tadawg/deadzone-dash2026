@@ -601,9 +601,23 @@ export class SceneManager {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, this.camera);
 
+        // 1. Raycast against zombies first
+        const zombieObjects = Object.values(this.zombieMeshes);
+        if (zombieObjects.length > 0) {
+            const intersects = raycaster.intersectObjects(zombieObjects, true);
+            if (intersects.length > 0) {
+                const target = intersects[0].point;
+                // If the hit point is higher than 1.2 units, consider it a headshot
+                target.isHeadshot = target.y > 1.2;
+                return target;
+            }
+        }
+
+        // 2. Fallback to directional plane
         const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, target)) {
+            target.isHeadshot = false;
             return target;
         }
         return null;
