@@ -117,12 +117,6 @@ function createPlayerVariation(playerData = {}) {
     };
 }
 
-function createArm(root, side, skinColor, sleeveColor) {
-    meshBox(root, `${side < 0 ? "left" : "right"}UpperArm`, [0.18, 0.58, 0.2], [side * 0.62, 0.96, -0.02], sleeveColor, [0, 0, side * 0.14]);
-    meshBox(root, `${side < 0 ? "left" : "right"}Forearm`, [0.16, 0.46, 0.17], [side * 0.72, 0.55, -0.07], skinColor, [0.12, 0, side * -0.1]);
-    meshSphere(root, `${side < 0 ? "left" : "right"}Hand`, [0.11, 0.1, 0.1], [side * 0.76, 0.28, -0.08], skinColor);
-}
-
 function createLeg(root, side, trousersColor, bootColor) {
     meshBox(root, `${side < 0 ? "left" : "right"}Thigh`, [0.22, 0.52, 0.22], [side * 0.22, 0.1, 0.02], trousersColor, [0, 0, side * 0.04]);
     meshBox(root, `${side < 0 ? "left" : "right"}Boot`, [0.23, 0.26, 0.34], [side * 0.24, -0.3, -0.08], bootColor, [0.05, 0, side * 0.02]);
@@ -197,8 +191,6 @@ export function createPlayerMesh(playerData = {}) {
     meshBox(bodyContainer, "waist", [0.54 * cfg.bodyWidth, 0.18, 0.34], [0, 0.24, 0], cfg.trousersColor);
     meshBox(bodyContainer, "neck", [0.16, 0.18, 0.16], [0, 1.28, -0.02], cfg.skinColor);
     createPlayerHead(bodyContainer, cfg);
-    createArm(bodyContainer, -1, cfg.skinColor, cfg.torsoColor);
-    createArm(bodyContainer, 1, cfg.skinColor, cfg.torsoColor);
     createLeg(bodyContainer, -1, cfg.trousersColor, "#171714");
     createLeg(bodyContainer, 1, cfg.trousersColor, "#171714");
     createPlayerGear(bodyContainer, cfg);
@@ -237,8 +229,8 @@ export function applyPlayerCustomization(mesh, config) {
     body.traverse((node) => {
         if (!node.isMesh || !node.material) return;
         const nextColor =
-            (torsoColor && ["torso", "leftUpperArm", "rightUpperArm"].includes(node.name) && torsoColor)
-            || (skinColor && ["head", "neck", "nose", "leftForearm", "rightForearm", "leftHand", "rightHand"].includes(node.name) && skinColor)
+            (torsoColor && node.name === "torso" && torsoColor)
+            || (skinColor && ["head", "neck", "nose"].includes(node.name) && skinColor)
             || (trousersColor && ["waist", "leftThigh", "rightThigh"].includes(node.name) && trousersColor)
             || (hairColor && ["hairCap", "backHair", "mohawk", "hairBun", "leftBrow", "rightBrow", "stubble", "beard"].includes(node.name) && hairColor)
             || (gearColor && ["chestRig", "strapLeft", "strapRight", "leftShoulder", "rightShoulder", "backpack", "backpackPocket"].includes(node.name) && gearColor)
