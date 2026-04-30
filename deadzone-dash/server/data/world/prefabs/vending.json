@@ -1,8 +1,8 @@
 {
   "id": "vending",
-  "width": 2.5,
-  "height": 5,
-  "depth": 2.5,
+  "width": 1.45,
+  "height": 3.2,
+  "depth": 1.1,
   "color": "#800000",
   "collision": true,
   "searchable": true,

@@ -5,9 +5,9 @@
   "biomePrefabPools": {
     "desert": ["crate", "barrel", "rubble"],
     "graveyard": ["grave", "grave", "rubble", "crate", "mausoleum"],
-    "ruins": ["wall", "car", "vending", "barrel", "crate", "rubble"],
+    "ruins": ["wall", "wall", "car", "barrel", "crate", "crate", "rubble", "rubble", "rubble", "vending"],
     "forest": ["tree", "tree", "rubble", "crate"],
-    "town": ["building_shell", "building_shell", "building_door", "car", "vending", "wall", "crate"]
+    "town": ["building_shell", "building_shell", "building_shell", "building_door", "car", "wall", "wall", "crate", "crate", "barrel", "rubble", "vending"]
   },
   "biomePrefabDensity": {
     "desert": { "min": 5, "max": 9 },

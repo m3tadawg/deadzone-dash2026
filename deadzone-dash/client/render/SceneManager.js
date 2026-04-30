@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createCamera } from "./Camera.js";
 import { createWorld } from "./World.js";
 import { createPlayerMesh, createZombieMesh, createProjectileMesh, createDroppedItemMesh, applyPlayerCustomization, applyWeaponVisual } from "./Entities.js";
@@ -72,10 +71,8 @@ export class SceneManager {
         this.zombieVisualCatalog = null;
         this.projectileVisualCatalog = null;
         this.weaponsCatalog = null;
-        this.zombieModels = {};
         this.weaponVisualsLoaded = this.loadWeaponVisuals();
         this.zombieVisualsLoaded = this.loadZombieVisuals();
-        this.zombieModelsLoaded = this.loadZombieModels();
         this.projectileVisualsLoaded = this.loadProjectileVisuals();
         this.weaponsLoaded = this.loadWeapons();
         this.damageZoneMeshes = {};
@@ -116,38 +113,6 @@ export class SceneManager {
             this.zombieVisualCatalog = { default: { base: { shape: "capsule", radius: 0.5, height: 1.5, color: "#ff4444" } } };
         }
     }
-
-    async loadZombieModels() {
-        const loader = new GLTFLoader();
-        const types = ["shambler", "runner", "brute", "crawler", "spitter", "screamer", "plague_lord", "colossus"];
-
-        const loadPromises = types.map(async (type) => {
-            const fileName = type.replaceAll("_", ""); // "plague_lord" -> "plaguelord"
-            try {
-                const gltf = await new Promise((resolve, reject) => {
-                    loader.load(`./assets/models/zombies/${fileName}.glb`, resolve, undefined, reject);
-                });
-
-                // Standardize the model
-                gltf.scene.traverse(node => {
-                    if (node.isMesh) {
-                        // Shadows disabled globally for zombies as requested
-                        node.castShadow = false;
-                        node.receiveShadow = false;
-                    }
-                });
-
-                this.zombieModels[type] = gltf.scene;
-                console.log(`Successfully loaded zombie model: ${type} (file: ${fileName}.glb)`);
-            } catch (err) {
-                console.warn(`Failed to load zombie model for type "${type}" (file: ${fileName}.glb):`, err);
-            }
-        });
-
-        await Promise.all(loadPromises);
-        console.log("All available zombie models have been processed.");
-    }
-
 
     async loadProjectileVisuals() {
         try {
@@ -301,7 +266,7 @@ export class SceneManager {
         this.targets.forEach(t => t.active = false);
 
         Object.entries(snapshot.players).forEach(([id, p]) => processEntity(id, p, this.playerMeshes, createPlayerMesh, true));
-        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, (zombieData) => createZombieMesh(zombieData.type, this.zombieVisualCatalog, this.zombieModels), false));
+        Object.entries(snapshot.zombies).forEach(([id, z]) => processEntity(id, z, this.zombieMeshes, (zombieData) => createZombieMesh(zombieData.type, this.zombieVisualCatalog), false));
 
         const projectileMap = snapshot.projectiles || {};
         Object.entries(projectileMap).forEach(([id, proj]) => {
