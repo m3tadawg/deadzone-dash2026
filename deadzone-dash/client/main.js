@@ -31,7 +31,16 @@ socket.onmessage = (msg) => {
   } else if (data.type === "hit") {
     const effectType = data.hitType === "player" ? "blood_red" : "blood_green";
     const height = data.isHeadshot ? 1.8 : 1.2;
-    sceneManager.particles.emit(effectType, new THREE.Vector3(data.x, height, data.z));
+    const impact = new THREE.Vector3(data.x, height, data.z);
+    sceneManager.particles.emit(effectType, impact);
+    if (data.hitType === "zombie") {
+      hud.showHitMarker(data);
+      if (data.isHeadshot) sceneManager.particles.emit("headshot_flash", impact);
+      if (data.killed) sceneManager.particles.emit("kill_burst", impact);
+      sceneManager.addCameraShake(data.killed ? 0.22 : data.isHeadshot ? 0.16 : 0.08);
+    } else {
+      sceneManager.addCameraShake(0.28);
+    }
   } else if (data.type === "notification") {
     hud.showNotification(data.text, data.tone);
   }
@@ -130,7 +139,7 @@ function loop() {
         
         if (isMouseDown) {
             if (currentTime - lastShootTime > 50) { // Max 20 times a second for shooting network packets
-                socket.send(JSON.stringify({ type: "shoot", aimX: aimTarget.x, aimZ: aimTarget.z, isHeadshot: aimTarget.isHeadshot }));
+                socket.send(JSON.stringify({ type: "shoot", aimX: aimTarget.x, aimZ: aimTarget.z }));
                 lastShootTime = currentTime;
             }
         }

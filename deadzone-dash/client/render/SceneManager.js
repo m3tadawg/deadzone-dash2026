@@ -79,6 +79,7 @@ export class SceneManager {
         this.hazardMeshes = {};
         this.particles = new ParticleSystem(this.scene);
         this.throwPreview = this.createThrowPreview();
+        this.cameraShake = 0;
 
         window.addEventListener("resize", () => this.handleResize());
     }
@@ -481,6 +482,15 @@ export class SceneManager {
                 // Lerp the camera position directly to give that elastic floating effect
                 const CAM_LERP_SPEED = 3.5; 
                 this.camera.position.lerp(targetCamPos, CAM_LERP_SPEED * dt);
+                if (this.cameraShake > 0.001) {
+                    const shakeOffset = new THREE.Vector3(
+                        (Math.random() - 0.5) * this.cameraShake,
+                        0,
+                        (Math.random() - 0.5) * this.cameraShake
+                    );
+                    this.camera.position.add(shakeOffset);
+                    this.cameraShake = Math.max(0, this.cameraShake - dt * 5.5);
+                }
 
                 // Biome Fog Update
                 if (this.mapData) {
@@ -557,6 +567,10 @@ export class SceneManager {
         this.renderer.render(this.scene, this.camera);
     }
 
+    addCameraShake(amount = 0.12) {
+        this.cameraShake = Math.min(0.42, Math.max(this.cameraShake, amount));
+    }
+
     getAimCoordinates(clientX, clientY) {
         const rect = this.renderer.domElement.getBoundingClientRect();
         const mouse = new THREE.Vector2();
@@ -571,10 +585,7 @@ export class SceneManager {
         if (zombieObjects.length > 0) {
             const intersects = raycaster.intersectObjects(zombieObjects, true);
             if (intersects.length > 0) {
-                const target = intersects[0].point;
-                // If the hit point is higher than 1.2 units, consider it a headshot
-                target.isHeadshot = target.y > 1.2;
-                return target;
+                return intersects[0].point;
             }
         }
 
@@ -582,7 +593,6 @@ export class SceneManager {
         const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, target)) {
-            target.isHeadshot = false;
             return target;
         }
         return null;

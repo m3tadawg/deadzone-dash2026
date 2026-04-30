@@ -12,9 +12,16 @@
       "cooldownMs": 1100
     },
     "aiProfile": {
+      "radius": 0.82,
       "speedMultiplier": 0.92,
       "steerProbeDistance": 1.05,
       "maxStuckTimeMs": 1000
+    },
+    "hitProfile": {
+      "bodyRadius": 0.9,
+      "headRadius": 0.4,
+      "headshotMultiplier": 2,
+      "headshotInstantKill": true
     }
   },
   {
@@ -35,6 +42,11 @@
       "steerProbeDistance": 1.35,
       "blockedCooldownMs": 450,
       "maxStuckTimeMs": 650
+    },
+    "hitProfile": {
+      "bodyRadius": 0.72,
+      "headRadius": 0.32,
+      "headshotMultiplier": 2
     }
   },
   {

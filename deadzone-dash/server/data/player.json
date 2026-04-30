@@ -5,6 +5,15 @@
   "staminaDrainRate": 6,
   "staminaRegenRate": 10,
   "scorePerKill": 100,
+  "combatRewards": {
+    "streakWindowMs": 4500,
+    "headshotBonus": 50,
+    "streakTiers": [
+      { "kills": 3, "bonus": 75, "label": "Triple Kill" },
+      { "kills": 5, "bonus": 150, "label": "Rampage" },
+      { "kills": 8, "bonus": 300, "label": "Deadzone Reaper" }
+    ]
+  },
   "startingInventory": [
     "medkit",
     null,

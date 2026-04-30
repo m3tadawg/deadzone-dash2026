@@ -3,9 +3,13 @@ class CombatSystem {
         this.weaponsConfig = weaponsConfig;
         this.hitCallback = hitCallback;
         this.StatusEffectSystem = require('./StatusEffectSystem');
+        this.zombieTypes = require('../data/zombies.json').reduce((acc, def) => {
+            acc[def.type] = def;
+            return acc;
+        }, {});
     }
 
-    handleShoot(player, zombies, isHeadshot = false) {
+    handleShoot(player, zombies) {
         const now = Date.now();
         const weapon = this.weaponsConfig.find((w) => w.id === player.weapon);
 
@@ -30,11 +34,93 @@ class CombatSystem {
             return this.handleThrown(player, zombies, weapon);
         }
 
-        return this.handleRaycastWeapon(player, zombies, weapon, isHeadshot);
+        return this.handleRaycastWeapon(player, zombies, weapon);
     }
 
-    handleRaycastWeapon(player, zombies, weapon, isHeadshot) {
+    getHitProfile(zombie) {
+        const typeDef = this.zombieTypes[zombie.type] || {};
+        const aiRadius = typeDef.aiProfile?.radius;
+        const hitProfile = typeDef.hitProfile || {};
+        const bodyRadius = hitProfile.bodyRadius ?? aiRadius ?? 0.75;
+
+        return {
+            bodyRadius,
+            headRadius: hitProfile.headRadius ?? Math.max(0.28, bodyRadius * 0.48),
+            headshotMultiplier: hitProfile.headshotMultiplier ?? 2,
+            headshotInstantKill: Boolean(hitProfile.headshotInstantKill)
+        };
+    }
+
+    getRayCircleHit(startX, startZ, dirX, dirZ, centerX, centerZ, radius, maxDist) {
+        const toCenterX = centerX - startX;
+        const toCenterZ = centerZ - startZ;
+        const projection = toCenterX * dirX + toCenterZ * dirZ;
+        if (projection < 0 || projection > maxDist + radius) return null;
+
+        const centerDistSq = toCenterX * toCenterX + toCenterZ * toCenterZ;
+        const perpendicularSq = centerDistSq - projection * projection;
+        const radiusSq = radius * radius;
+        if (perpendicularSq > radiusSq) return null;
+
+        const halfChord = Math.sqrt(Math.max(0, radiusSq - perpendicularSq));
+        const entryDist = Math.max(0, projection - halfChord);
+        if (entryDist > maxDist) return null;
+
+        return {
+            entryDist,
+            centerDist: projection,
+            perpendicularSq
+        };
+    }
+
+    findFirstZombieHit(zombies, startX, startZ, dirX, dirZ, maxDist) {
+        let hit = null;
+        let minEntryDist = maxDist;
+
+        Object.values(zombies).forEach((zombie) => {
+            if (zombie.dead) return;
+
+            const profile = this.getHitProfile(zombie);
+            const bodyHit = this.getRayCircleHit(
+                startX,
+                startZ,
+                dirX,
+                dirZ,
+                zombie.x,
+                zombie.z,
+                profile.bodyRadius,
+                minEntryDist
+            );
+            if (!bodyHit) return;
+
+            const headHit = this.getRayCircleHit(
+                startX,
+                startZ,
+                dirX,
+                dirZ,
+                zombie.x,
+                zombie.z,
+                profile.headRadius,
+                minEntryDist
+            );
+
+            hit = {
+                zombie,
+                profile,
+                isHeadshot: Boolean(headHit),
+                dist: bodyHit.entryDist,
+                x: startX + dirX * bodyHit.entryDist,
+                z: startZ + dirZ * bodyHit.entryDist
+            };
+            minEntryDist = bodyHit.entryDist;
+        });
+
+        return hit;
+    }
+
+    handleRaycastWeapon(player, zombies, weapon) {
         const eliminatedZombieIds = [];
+        const hitEvents = [];
         const rays = [];
 
         const aimVec = { x: player.aimX - player.x, z: player.aimZ - player.z };
@@ -53,12 +139,7 @@ class CombatSystem {
 
         const numPellets = weapon.pellets || 1;
         const spread = weapon.spread || 0;
-        let modifiedDamage = this.StatusEffectSystem.applyModifiers(player, weapon.damage, 'outgoingDamage');
-        
-        if (isHeadshot) {
-            // Apply a 2x damage multiplier for headshots
-            modifiedDamage *= 2;
-        }
+        const baseDamage = this.StatusEffectSystem.applyModifiers(player, weapon.damage, 'outgoingDamage');
 
         for (let i = 0; i < numPellets; i++) {
             let bDirX = dirX;
@@ -75,7 +156,6 @@ class CombatSystem {
             let endX = startX + bDirX * weapon.range;
             let endZ = startZ + bDirZ * weapon.range;
 
-            let hitZombie = null;
             let minTargetDist = weapon.range;
 
             const WorldSystem = require('./WorldSystem');
@@ -86,37 +166,39 @@ class CombatSystem {
                 endZ = worldHit.z;
             }
 
-            Object.values(zombies).forEach((zombie) => {
-                if (zombie.dead) return;
+            const hit = this.findFirstZombieHit(zombies, startX, startZ, bDirX, bDirZ, minTargetDist);
 
-                const zVec = { x: zombie.x - startX, z: zombie.z - startZ };
-                const distT = zVec.x * bDirX + zVec.z * bDirZ;
-
-                if (distT > 0 && distT < minTargetDist) {
-                    const distToRaySq = (zVec.x * zVec.x + zVec.z * zVec.z) - distT * distT;
-                    if (distToRaySq < 1.0) {
-                        hitZombie = zombie;
-                        minTargetDist = distT;
-                    }
-                }
-            });
-
-            if (hitZombie) {
-                const isKilled = this.applyDamageToZombie(hitZombie, modifiedDamage, weapon.effects);
-                if (isKilled) eliminatedZombieIds.push(hitZombie.id);
+            if (hit) {
+                const damage = hit.isHeadshot
+                    ? (hit.profile.headshotInstantKill ? hit.zombie.health : baseDamage * hit.profile.headshotMultiplier)
+                    : baseDamage;
+                const isKilled = this.applyDamageToZombie(hit.zombie, damage, weapon.effects);
+                if (isKilled) eliminatedZombieIds.push(hit.zombie.id);
+                hitEvents.push({
+                    zombieId: hit.zombie.id,
+                    zombieType: hit.zombie.type,
+                    isHeadshot: hit.isHeadshot,
+                    killed: isKilled,
+                    damage
+                });
                 
                 if (this.hitCallback) {
-                    this.hitCallback(hitZombie.x, hitZombie.z, "zombie", isHeadshot);
+                    this.hitCallback(hit.zombie.x, hit.zombie.z, "zombie", hit.isHeadshot, {
+                        killed: isKilled,
+                        damage,
+                        zombieId: hit.zombie.id,
+                        zombieType: hit.zombie.type
+                    });
                 }
 
-                endX = hitZombie.x;
-                endZ = hitZombie.z;
+                endX = hit.x;
+                endZ = hit.z;
             }
 
             rays.push({ startX, startZ, endX, endZ });
         }
 
-        return { eliminatedZombieIds, rays };
+        return { eliminatedZombieIds, hitEvents, rays };
     }
 
     handleThrown(player, zombies, weapon) {
@@ -135,6 +217,7 @@ class CombatSystem {
 
         const radius = weapon.damageRadius || 4;
         const eliminatedZombieIds = [];
+        const hitEvents = [];
 
         const modifiedDamage = this.StatusEffectSystem.applyModifiers(player, weapon.damage, 'outgoingDamage');
 
@@ -146,9 +229,21 @@ class CombatSystem {
 
             const isKilled = this.applyDamageToZombie(zombie, modifiedDamage, weapon.effects);
             if (isKilled) eliminatedZombieIds.push(zombie.id);
+            hitEvents.push({
+                zombieId: zombie.id,
+                zombieType: zombie.type,
+                isHeadshot: false,
+                killed: isKilled,
+                damage: modifiedDamage
+            });
             
             if (this.hitCallback) {
-                this.hitCallback(zombie.x, zombie.z, "zombie");
+                this.hitCallback(zombie.x, zombie.z, "zombie", false, {
+                    killed: isKilled,
+                    damage: modifiedDamage,
+                    zombieId: zombie.id,
+                    zombieType: zombie.type
+                });
             }
         });
 
@@ -185,6 +280,7 @@ class CombatSystem {
             endX: impactX,
             endZ: impactZ,
             eliminatedZombieIds,
+            hitEvents,
             damageZones,
             hazards
         };

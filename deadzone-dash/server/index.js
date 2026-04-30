@@ -163,7 +163,7 @@ wss.on("connection", (ws) => {
             player.aimZ = data.aimZ;
         }
 
-        const result = combatSystem.handleShoot(player, zombies, data.isHeadshot);
+        const result = combatSystem.handleShoot(player, zombies);
         if (result) {
             // Consumables logic: auto-reload next unit or remove if empty
             const weapon = weaponLoadoutSystem.weaponById.get(player.weapon);
@@ -172,9 +172,21 @@ wss.on("connection", (ws) => {
             }
             weaponLoadoutSystem.checkDepletion(player);
 
-            (result.eliminatedZombieIds || []).forEach(() => {
-                PlayerStatsSystem.creditKill(player);
-            });
+            const killedHitEvents = (result.hitEvents || []).filter((event) => event.killed);
+            if (killedHitEvents.length > 0) {
+              killedHitEvents.forEach((event) => {
+                const reward = PlayerStatsSystem.creditKill(player, {
+                  isHeadshot: event.isHeadshot,
+                  now: Date.now()
+                });
+                notifyCombatReward(player, reward, event);
+              });
+            } else {
+              (result.eliminatedZombieIds || []).forEach(() => {
+                const reward = PlayerStatsSystem.creditKill(player, { now: Date.now() });
+                notifyCombatReward(player, reward);
+              });
+            }
 
             const area = WorldSystem.getAreaAt(player.x, player.z);
             (result.eliminatedZombieIds || []).forEach((zombieId) => {
@@ -272,6 +284,19 @@ function notifyPlayer(playerId, text, tone = "info") {
     }
 }
 
+function notifyCombatReward(player, reward, hitEvent = {}) {
+  if (!player || !reward) return;
+
+  if (reward.streakLabel) {
+    notifyPlayer(player.id, `${reward.streakLabel} x${reward.killStreak} +${reward.scoreAdded}`, "streak");
+    return;
+  }
+
+  if (hitEvent.isHeadshot && reward.headshotBonus > 0) {
+    notifyPlayer(player.id, `Headshot +${reward.scoreAdded}`, "headshot");
+  }
+}
+
 function describeWeaponLootResult(result, weapon) {
   const weaponName = weaponLoadoutSystem.getWeaponDisplayName(result.weaponId);
   const slotText = `slot ${result.slot + 1}`;
@@ -311,13 +336,14 @@ function describeWeaponLootResult(result, weapon) {
   };
 }
 
-function broadcastHit(x, z, type = "zombie", isHeadshot = false) {
+function broadcastHit(x, z, type = "zombie", isHeadshot = false, details = {}) {
     broadcast({
         type: "hit",
         x,
         z,
         hitType: type,
-        isHeadshot
+        isHeadshot,
+        ...details
     });
 }
 
@@ -366,6 +392,7 @@ setInterval(() => {
     }
 
     PlayerStatsSystem.updateStamina(player, deltaTime);
+    PlayerStatsSystem.updateCombatState(player, currentTime);
 
     StatusEffectSystem.update(player, deltaTime);
 
@@ -478,7 +505,8 @@ setInterval(() => {
           // Attribute kill to owner
           const owner = players[hazard.ownerId];
           if (owner) {
-            PlayerStatsSystem.creditKill(owner);
+            const reward = PlayerStatsSystem.creditKill(owner, { now: Date.now() });
+            notifyCombatReward(owner, reward);
             const area = WorldSystem.getAreaAt(zombie.x, zombie.z);
             let dropMultiplier = area?.lootMultiplier || 1;
             if (zombie.type === 'shambler' || zombie.type === 'runner') {

@@ -3,17 +3,71 @@
   "gridSize": 10,
   "defaultBiome": "desert",
   "biomePrefabPools": {
-    "desert": ["crate", "barrel", "rubble"],
-    "graveyard": ["grave", "grave", "rubble", "crate", "mausoleum"],
-    "ruins": ["wall", "wall", "car", "barrel", "crate", "crate", "rubble", "rubble", "rubble", "vending"],
-    "forest": ["tree", "tree", "rubble", "crate"],
-    "town": ["building_shell", "building_shell", "building_shell", "building_door", "car", "wall", "wall", "crate", "crate", "barrel", "rubble", "vending"]
+    "desert": [
+      "crate",
+      "barrel",
+      "rubble",
+      "car"
+    ],
+    "graveyard": [
+      "grave",
+      "grave",
+      "rubble",
+      "mausoleum"
+    ],
+    "ruins": [
+      "wall",
+      "wall",
+      "car",
+      "barrel",
+      "crate",
+      "crate",
+      "rubble",
+      "rubble",
+      "rubble",
+      "vending"
+    ],
+    "forest": [
+      "tree",
+      "tree",
+      "rubble",
+      "crate"
+    ],
+    "town": [
+      "building_shell",
+      "building_shell",
+      "building_shell",
+      "building_door",
+      "car",
+      "wall",
+      "wall",
+      "crate",
+      "crate",
+      "barrel",
+      "rubble",
+      "vending"
+    ]
   },
   "biomePrefabDensity": {
-    "desert": { "min": 5, "max": 9 },
-    "graveyard": { "min": 12, "max": 18 },
-    "ruins": { "min": 12, "max": 20 },
-    "forest": { "min": 8, "max": 14 },
-    "town": { "min": 10, "max": 16 }
+    "desert": {
+      "min": 5,
+      "max": 9
+    },
+    "graveyard": {
+      "min": 12,
+      "max": 18
+    },
+    "ruins": {
+      "min": 12,
+      "max": 20
+    },
+    "forest": {
+      "min": 8,
+      "max": 14
+    },
+    "town": {
+      "min": 10,
+      "max": 16
+    }
   }
 }

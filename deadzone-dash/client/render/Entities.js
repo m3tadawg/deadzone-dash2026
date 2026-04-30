@@ -166,7 +166,7 @@ const ZOMBIE_PALETTES = {
 
 const ZOMBIE_SCALE = {
     default: 1,
-    shambler: 1,
+    shambler: 1.12,
     runner: 0.92,
     brute: 1.28,
     crawler: 0.9,

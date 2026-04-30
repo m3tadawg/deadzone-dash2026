@@ -36,6 +36,7 @@
     }
   },
   "shambler": {
+    "scale": 1.12,
     "base": {
       "shape": "capsule",
       "radius": 0.52,

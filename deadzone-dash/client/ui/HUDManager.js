@@ -37,6 +37,7 @@ class HUDManager {
       staminaFill: document.getElementById("staminaFill"),
       waveValue: document.getElementById("waveValue"),
       killsValue: document.getElementById("killsValue"),
+      streakValue: document.getElementById("streakValue"),
       scoreValue: document.getElementById("scoreValue"),
       weaponName: document.getElementById("weaponName"),
       ammoCount: document.getElementById("ammoCount"),
@@ -44,10 +45,12 @@ class HUDManager {
       notifications: document.getElementById("notifications"),
       vitalsPanel: document.getElementById("vitalsPanel"),
       weaponPanel: document.getElementById("weaponPanel"),
+      hitMarker: document.getElementById("hitMarker"),
       searchProgressContainer: document.getElementById("searchProgressContainer"),
       searchProgressFill: document.getElementById("searchProgressFill")
     };
     this._notificationTimeout = null;
+    this._hitMarkerTimeout = null;
     this._maxHealth = 100;
     this._maxStamina = 100;
     this._inventorySignature = "";
@@ -108,6 +111,22 @@ class HUDManager {
     }, 3000);
   }
 
+  showHitMarker({ isHeadshot = false, killed = false } = {}) {
+    const marker = this.els.hitMarker;
+    if (!marker) return;
+
+    if (this._hitMarkerTimeout) {
+      clearTimeout(this._hitMarkerTimeout);
+      this._hitMarkerTimeout = null;
+    }
+
+    marker.className = `hit-marker visible ${killed ? "kill" : ""} ${isHeadshot ? "headshot" : ""}`.trim();
+    this._hitMarkerTimeout = setTimeout(() => {
+      marker.className = "hit-marker";
+      this._hitMarkerTimeout = null;
+    }, killed ? 220 : 140);
+  }
+
   updateFromSnapshot(snapshot, localPlayerId) {
     const localPlayer = snapshot.players[localPlayerId];
     if (!localPlayer) return;
@@ -141,6 +160,7 @@ class HUDManager {
 
     this.els.waveValue.textContent = String(snapshot.hud?.wave ?? 1);
     this.els.killsValue.textContent = String(localPlayer.kills ?? 0);
+    this.els.streakValue.textContent = String(localPlayer.killStreak ?? 0);
     this.els.scoreValue.textContent = String(localPlayer.score ?? 0);
     this.els.weaponName.textContent = prettyWeaponName(localPlayer.weapon);
 

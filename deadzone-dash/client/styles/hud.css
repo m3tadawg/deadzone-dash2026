@@ -329,6 +329,8 @@ canvas { display: block; }
 }
 
 #notifications {
+    position: absolute;
+    top: 30%;
     min-height: 34px;
     font-size: 24px;
     font-weight: 800;
@@ -360,7 +362,9 @@ canvas { display: block; }
 }
 
 .notification.replace,
-.notification.perk {
+.notification.perk,
+.notification.headshot,
+.notification.streak {
     color: var(--color-amber);
     border-color: rgba(255, 191, 61, 0.75);
     box-shadow: 0 0 24px rgba(255, 191, 61, 0.24);
@@ -372,6 +376,51 @@ canvas { display: block; }
 
 .notification.miss {
     color: rgba(255, 255, 255, 0.72);
+}
+
+.hit-marker {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transform: scale(0.86);
+    transition: opacity 0.08s ease, transform 0.08s ease;
+}
+
+.hit-marker::before,
+.hit-marker::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.72);
+}
+
+.hit-marker::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.hit-marker::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.hit-marker.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.hit-marker.headshot::before,
+.hit-marker.headshot::after {
+    background: var(--color-amber);
+    box-shadow: 0 0 14px rgba(255, 191, 61, 0.85);
+}
+
+.hit-marker.kill {
+    animation: hit-marker-kill 0.22s ease-out;
 }
 
 .prompt-pulse {
@@ -446,6 +495,12 @@ canvas { display: block; }
 @keyframes notification-pop {
     0% { transform: skew(-6deg) scale(0.92); opacity: 0; }
     100% { transform: skew(-6deg) scale(1); opacity: 1; }
+}
+
+@keyframes hit-marker-kill {
+    0% { transform: scale(0.78) rotate(0deg); }
+    60% { transform: scale(1.2) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
 }
 
 @media (max-width: 900px) {

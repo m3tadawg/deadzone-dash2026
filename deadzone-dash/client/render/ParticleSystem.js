@@ -238,6 +238,30 @@ const EFFECT_PROFILES = {
         gravity: 18.0,
         blending: THREE.NormalBlending
     },
+    headshot_flash: {
+        texture: "particle",
+        countMin: 12,
+        countMax: 20,
+        life: 0.35,
+        velocity: 5.5,
+        spread: 0.18,
+        size: 1.4,
+        color: 0xffd166,
+        gravity: 12.0,
+        blending: THREE.AdditiveBlending
+    },
+    kill_burst: {
+        texture: "particle",
+        countMin: 18,
+        countMax: 28,
+        life: 0.45,
+        velocity: 4.2,
+        spread: 0.45,
+        size: 1.9,
+        color: 0xd8fff7,
+        gravity: 10.0,
+        blending: THREE.AdditiveBlending
+    },
     muzzle_flash: {
         texture: "muzzle",
         countMin: 1,
