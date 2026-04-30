@@ -15,6 +15,42 @@ const PLAYER_COLORS = [
     0xecf0f1  // White
 ];
 
+const PLAYER_SKIN_COLORS = [
+    "#fddbb4",
+    "#f2c68b",
+    "#d4956a",
+    "#b5713e",
+    "#8b4513",
+    "#4a2c0a"
+];
+
+const PLAYER_HAIR_COLORS = [
+    "#1a0a00",
+    "#3b1f07",
+    "#7b4412",
+    "#b8732a",
+    "#c8a44a",
+    "#888888"
+];
+
+const PLAYER_TROUSER_COLORS = [
+    "#2b2f2b",
+    "#1f2833",
+    "#3a3020",
+    "#1c1c1c"
+];
+
+function hashId(id) {
+    return Math.abs(String(id).split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+    }, 0));
+}
+
+function pickByHash(list, hash, offset = 0) {
+    return list[(hash + offset) % list.length];
+}
+
 export class SceneManager {
     constructor() {
         this.scene = new THREE.Scene();
@@ -209,10 +245,15 @@ export class SceneManager {
 
                 if (isPlayer) {
                     // Assign deterministic color based on ID
-                    const colorIndex = Math.abs(id.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0)) % PLAYER_COLORS.length;
+                    const playerHash = hashId(id);
+                    const colorIndex = playerHash % PLAYER_COLORS.length;
                     applyPlayerCustomization(mesh, {
                         torsoColor: PLAYER_COLORS[colorIndex],
-                        skinColor: 0xffdbac
+                        skinColor: pickByHash(PLAYER_SKIN_COLORS, playerHash, 2),
+                        trousersColor: pickByHash(PLAYER_TROUSER_COLORS, playerHash, 4),
+                        hairColor: pickByHash(PLAYER_HAIR_COLORS, playerHash, 6),
+                        gearColor: pickByHash(["#3b3329", "#32383d", "#4a3728", "#2f3f34"], playerHash, 8),
+                        accentColor: pickByHash(["#13d7ff", "#ffbf3d", "#45f08f", "#ef4444"], playerHash, 10)
                     });
                 }
             }

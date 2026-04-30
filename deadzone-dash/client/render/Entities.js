@@ -3,7 +3,6 @@ import * as THREE from "three";
 // Shared Geometries for optimization
 const boxGeos = {
     torso: new THREE.BoxGeometry(1.0, 1.2, 0.6),
-    head: new THREE.BoxGeometry(0.6, 0.6, 0.6),
     visor: new THREE.BoxGeometry(0.7, 0.2, 0.15)
 };
 
@@ -75,28 +74,134 @@ function createWeaponModel(weaponVisual) {
     return weaponRoot;
 }
 
-export function createPlayerMesh() {
+const PLAYER_VISUAL_DEFAULTS = {
+    skinColor: "#d4956a",
+    torsoColor: "#334e38",
+    trousersColor: "#2b2f2b",
+    hairColor: "#241206",
+    gearColor: "#3b3329",
+    accentColor: "#13d7ff",
+    bodyWidth: 1,
+    headScale: 1,
+    hair: "short",
+    facialHair: "stubble",
+    shoulders: "pads",
+    backpack: "small"
+};
+
+function hexColor(value, fallback) {
+    if (typeof value === "number") return `#${value.toString(16).padStart(6, "0")}`;
+    return value || fallback;
+}
+
+function hashValue(value) {
+    return Math.abs(String(value || "player").split("").reduce((acc, char) => {
+        acc = ((acc << 5) - acc) + char.charCodeAt(0);
+        return acc & acc;
+    }, 0));
+}
+
+function pickVariant(list, hash, offset = 0) {
+    return list[(hash + offset) % list.length];
+}
+
+function createPlayerVariation(playerData = {}) {
+    const hash = hashValue(playerData.id);
+    return {
+        bodyWidth: pickVariant([0.9, 0.96, 1, 1.08, 1.15], hash, 1),
+        headScale: pickVariant([0.92, 0.98, 1, 1.04, 1.08], hash, 2),
+        hair: pickVariant(["short", "long", "bun", "mohawk", "none"], hash, 3),
+        facialHair: pickVariant(["none", "none", "stubble", "beard"], hash, 4),
+        shoulders: pickVariant(["none", "pads", "scraps"], hash, 5),
+        backpack: pickVariant(["none", "small", "large"], hash, 6)
+    };
+}
+
+function createArm(root, side, skinColor, sleeveColor) {
+    meshBox(root, `${side < 0 ? "left" : "right"}UpperArm`, [0.18, 0.58, 0.2], [side * 0.62, 0.96, -0.02], sleeveColor, [0, 0, side * 0.14]);
+    meshBox(root, `${side < 0 ? "left" : "right"}Forearm`, [0.16, 0.46, 0.17], [side * 0.72, 0.55, -0.07], skinColor, [0.12, 0, side * -0.1]);
+    meshSphere(root, `${side < 0 ? "left" : "right"}Hand`, [0.11, 0.1, 0.1], [side * 0.76, 0.28, -0.08], skinColor);
+}
+
+function createLeg(root, side, trousersColor, bootColor) {
+    meshBox(root, `${side < 0 ? "left" : "right"}Thigh`, [0.22, 0.52, 0.22], [side * 0.22, 0.1, 0.02], trousersColor, [0, 0, side * 0.04]);
+    meshBox(root, `${side < 0 ? "left" : "right"}Boot`, [0.23, 0.26, 0.34], [side * 0.24, -0.3, -0.08], bootColor, [0.05, 0, side * 0.02]);
+}
+
+function createPlayerHead(root, cfg) {
+    const headGroup = new THREE.Object3D();
+    headGroup.name = "headGroup";
+    headGroup.position.y = 1.54;
+    headGroup.scale.setScalar(cfg.headScale || 1);
+
+    meshSphere(headGroup, "head", [0.33, 0.39, 0.32], [0, 0, -0.02], cfg.skinColor);
+    meshBox(headGroup, "nose", [0.08, 0.11, 0.08], [0, -0.02, -0.34], cfg.skinColor, [0.1, 0, 0]);
+    meshBox(headGroup, "leftEye", [0.08, 0.055, 0.04], [-0.12, 0.07, -0.35], "#101010");
+    meshBox(headGroup, "rightEye", [0.08, 0.055, 0.04], [0.12, 0.07, -0.35], "#101010");
+    meshBox(headGroup, "leftBrow", [0.13, 0.035, 0.04], [-0.12, 0.16, -0.35], cfg.hairColor, [0, 0, 0.12]);
+    meshBox(headGroup, "rightBrow", [0.13, 0.035, 0.04], [0.12, 0.16, -0.35], cfg.hairColor, [0, 0, -0.12]);
+
+    if (cfg.hair !== "none") {
+        meshSphere(headGroup, "hairCap", [0.35, 0.19, 0.33], [0, 0.22, -0.01], cfg.hairColor);
+    }
+    if (cfg.hair === "long" || cfg.hair === "bun") {
+        meshSphere(headGroup, "backHair", [0.24, 0.38, 0.16], [0, -0.08, 0.24], cfg.hairColor);
+    }
+    if (cfg.hair === "mohawk") {
+        meshBox(headGroup, "mohawk", [0.12, 0.42, 0.48], [0, 0.39, 0.02], cfg.hairColor, [0.1, 0, 0]);
+    }
+    if (cfg.hair === "bun") {
+        meshSphere(headGroup, "hairBun", [0.16, 0.16, 0.16], [0, 0.14, 0.36], cfg.hairColor);
+    }
+    if (cfg.facialHair === "stubble") {
+        meshBox(headGroup, "stubble", [0.28, 0.13, 0.04], [0, -0.18, -0.34], cfg.hairColor);
+    } else if (cfg.facialHair === "beard") {
+        meshBox(headGroup, "beard", [0.32, 0.24, 0.07], [0, -0.22, -0.32], cfg.hairColor, [0.08, 0, 0]);
+    }
+
+    root.add(headGroup);
+    return headGroup;
+}
+
+function createPlayerGear(root, cfg) {
+    meshBox(root, "chestRig", [0.64, 0.34, 0.08], [0, 0.86, -0.32], cfg.gearColor, [0.1, 0, 0]);
+    meshBox(root, "strapLeft", [0.08, 0.78, 0.06], [-0.22, 0.91, -0.34], cfg.gearColor, [0, 0, -0.34]);
+    meshBox(root, "strapRight", [0.08, 0.78, 0.06], [0.22, 0.91, -0.34], cfg.gearColor, [0, 0, 0.34]);
+    meshBox(root, "accentPatch", [0.18, 0.12, 0.04], [0.23, 0.96, -0.38], cfg.accentColor);
+
+    if (cfg.shoulders !== "none") {
+        const shoulderColor = cfg.shoulders === "scraps" ? "#5a5648" : cfg.gearColor;
+        meshBox(root, "leftShoulder", [0.28, 0.16, 0.34], [-0.5, 1.18, -0.02], shoulderColor, [0, 0, -0.24]);
+        meshBox(root, "rightShoulder", [0.28, 0.16, 0.34], [0.5, 1.18, -0.02], shoulderColor, [0, 0, 0.24]);
+    }
+
+    if (cfg.backpack !== "none") {
+        const packHeight = cfg.backpack === "large" ? 0.88 : 0.62;
+        meshBox(root, "backpack", [0.58, packHeight, 0.24], [0, 0.74, 0.36], cfg.gearColor);
+        meshBox(root, "backpackPocket", [0.38, 0.22, 0.08], [0, 0.5, 0.52], cfg.gearColor);
+    }
+}
+
+export function createPlayerMesh(playerData = {}) {
     const parent = new THREE.Object3D();
+    const cfg = {
+        ...PLAYER_VISUAL_DEFAULTS,
+        ...createPlayerVariation(playerData),
+        ...(playerData.character || playerData.visual || {})
+    };
 
     const bodyContainer = new THREE.Object3D();
     bodyContainer.name = "bodyContainer";
 
-    // Torso
-    const torso = new THREE.Mesh(boxGeos.torso, new THREE.MeshStandardMaterial({ color: 0x00ff00 }));
-    torso.name = "torso";
-    torso.position.y = 0.6;
-    bodyContainer.add(torso);
-
-    // Head
-    const head = new THREE.Mesh(boxGeos.head, new THREE.MeshStandardMaterial({ color: 0xffdbac }));
-    head.name = "head";
-    head.position.y = 1.5;
-    bodyContainer.add(head);
-
-    // Visor/Eyes
-    const visor = new THREE.Mesh(boxGeos.visor, new THREE.MeshStandardMaterial({ color: 0x000000 }));
-    visor.position.set(0, 1.5, -0.3); // On the face
-    bodyContainer.add(visor);
+    meshSphere(bodyContainer, "torso", [0.4 * cfg.bodyWidth, 0.62, 0.3], [0, 0.75, 0], cfg.torsoColor);
+    meshBox(bodyContainer, "waist", [0.54 * cfg.bodyWidth, 0.18, 0.34], [0, 0.24, 0], cfg.trousersColor);
+    meshBox(bodyContainer, "neck", [0.16, 0.18, 0.16], [0, 1.28, -0.02], cfg.skinColor);
+    createPlayerHead(bodyContainer, cfg);
+    createArm(bodyContainer, -1, cfg.skinColor, cfg.torsoColor);
+    createArm(bodyContainer, 1, cfg.skinColor, cfg.torsoColor);
+    createLeg(bodyContainer, -1, cfg.trousersColor, "#171714");
+    createLeg(bodyContainer, 1, cfg.trousersColor, "#171714");
+    createPlayerGear(bodyContainer, cfg);
 
     parent.add(bodyContainer);
 
@@ -122,15 +227,30 @@ export function applyPlayerCustomization(mesh, config) {
     const body = mesh.getObjectByName("bodyContainer");
     if (!body) return;
 
-    if (config.torsoColor) {
-        const torso = body.getObjectByName("torso");
-        if (torso) torso.material.color.set(config.torsoColor);
-    }
+    const torsoColor = hexColor(config.torsoColor || config.shirt, null);
+    const skinColor = hexColor(config.skinColor || config.skin, null);
+    const trousersColor = hexColor(config.trousersColor || config.trousers, null);
+    const hairColor = hexColor(config.hairColor || config.hairColour, null);
+    const gearColor = hexColor(config.gearColor || config.backpackColour, null);
+    const accentColor = hexColor(config.accentColor, null);
 
-    if (config.skinColor) {
-        const head = body.getObjectByName("head");
-        if (head) head.material.color.set(config.skinColor);
-    }
+    body.traverse((node) => {
+        if (!node.isMesh || !node.material) return;
+        const nextColor =
+            (torsoColor && ["torso", "leftUpperArm", "rightUpperArm"].includes(node.name) && torsoColor)
+            || (skinColor && ["head", "neck", "nose", "leftForearm", "rightForearm", "leftHand", "rightHand"].includes(node.name) && skinColor)
+            || (trousersColor && ["waist", "leftThigh", "rightThigh"].includes(node.name) && trousersColor)
+            || (hairColor && ["hairCap", "backHair", "mohawk", "hairBun", "leftBrow", "rightBrow", "stubble", "beard"].includes(node.name) && hairColor)
+            || (gearColor && ["chestRig", "strapLeft", "strapRight", "leftShoulder", "rightShoulder", "backpack", "backpackPocket"].includes(node.name) && gearColor)
+            || (accentColor && node.name === "accentPatch" && accentColor);
+
+        if (!nextColor) return;
+        if (!node.userData.hasCustomMaterial) {
+            node.material = node.material.clone();
+            node.userData.hasCustomMaterial = true;
+        }
+        node.material.color.set(nextColor);
+    });
 }
 
 export function applyWeaponVisual(mesh, weaponId, weaponVisualCatalog) {
