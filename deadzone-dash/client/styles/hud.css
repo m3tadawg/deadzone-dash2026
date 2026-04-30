@@ -1,9 +1,11 @@
 :root {
-    --bg-glass: rgba(15, 17, 23, 0.85);
-    --border-glass: rgba(255, 255, 255, 0.1);
+    --bg-glass: rgba(9, 12, 18, 0.9);
+    --border-glass: rgba(255, 255, 255, 0.16);
     
-    --color-cyan: #06b6d4;
-    --glow-cyan: rgba(6, 182, 212, 0.3);
+    --color-cyan: #13d7ff;
+    --color-amber: #ffbf3d;
+    --color-green: #45f08f;
+    --glow-cyan: rgba(19, 215, 255, 0.34);
     --glow-cyan-strong: rgba(6, 182, 212, 0.8);
     
     --color-red: #ef4444;
@@ -19,6 +21,7 @@ body {
     overflow: hidden;
     background: #000;
     font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--text-white);
 }
 
 canvas { display: block; }
@@ -49,7 +52,7 @@ canvas { display: block; }
     font-size: 20vw;
     font-weight: 900;
     color: rgba(255, 255, 255, 0.03);
-    letter-spacing: -0.05em;
+    letter-spacing: 0;
     user-select: none;
     margin: 0;
 }
@@ -87,11 +90,23 @@ canvas { display: block; }
     border: 1px solid var(--border-glass);
     border-radius: 8px;
     padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-top: 3px solid rgba(255, 191, 61, 0.72);
+    background: linear-gradient(90deg, rgba(19, 215, 255, 0.12), transparent 42%, rgba(255, 191, 61, 0.1));
 }
 
 .neon-cyan {
-    box-shadow: 0 0 15px var(--glow-cyan);
-    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 18px var(--glow-cyan), 0 14px 34px rgba(0, 0, 0, 0.46);
+    border-color: rgba(19, 215, 255, 0.48);
 }
 
 /* =========================================
@@ -99,7 +114,7 @@ canvas { display: block; }
    ========================================= */
 .label {
     font-size: 10px;
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--text-muted);
     font-weight: 700;
@@ -111,12 +126,12 @@ canvas { display: block; }
 
 .value-sub {
     font-size: 10px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0;
     color: rgba(255, 255, 255, 0.7);
 }
 
 .massive-number {
-    font-size: 36px;
+    font-size: 40px;
     font-weight: 900;
     line-height: 1;
     margin-top: 4px;
@@ -150,7 +165,7 @@ canvas { display: block; }
 
 .bar-bg {
     width: 100%;
-    height: 8px;
+    height: 10px;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
@@ -164,12 +179,12 @@ canvas { display: block; }
 }
 
 .fill-cyan {
-    background: var(--color-cyan);
+    background: linear-gradient(90deg, #0587a5, var(--color-cyan), #d8fbff);
     box-shadow: 0 0 10px var(--glow-cyan-strong);
 }
 
 .fill-white {
-    background: rgba(255, 255, 255, 0.8);
+    background: linear-gradient(90deg, #8da1a8, #ffffff);
 }
 
 /* Critical Health State - Toggled via JS */
@@ -194,15 +209,15 @@ canvas { display: block; }
    ========================================= */
 .combat-info {
     text-align: right;
-    width: 250px;
+    width: 280px;
 }
 
 .weapon-name {
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 23px;
+    font-weight: 900;
     color: var(--text-white);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0;
     margin: 4px 0 8px 0;
     white-space: nowrap;
     overflow: hidden;
@@ -210,7 +225,7 @@ canvas { display: block; }
 }
 
 .massive-ammo {
-    font-size: 48px;
+    font-size: 56px;
     font-weight: 900;
     line-height: 1;
 }
@@ -222,49 +237,83 @@ canvas { display: block; }
 /* Inventory Grid */
 .inventory-grid {
     display: flex;
-    gap: 8px;
-    padding: 8px;
+    gap: 10px;
+    padding: 10px;
 }
 
 .inv-slot {
-    width: 60px;
-    height: 60px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-glass);
+    width: 78px;
+    height: 74px;
+    background: linear-gradient(180deg, rgba(19, 215, 255, 0.08), rgba(0, 0, 0, 0.72));
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 6px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 6px;
-    transition: all 0.2s ease;
+    padding: 7px;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
 }
 
-.inv-slot div:first-child {
-    font-size: 10px;
+.inv-slot::after {
+    content: "";
+    position: absolute;
+    inset: auto 7px 7px 7px;
+    height: 2px;
+    background: rgba(255, 191, 61, 0.45);
+}
+
+.inv-slot .slot-name {
+    font-size: 11px;
+    font-weight: 900;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.86);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .inv-slot .slot-index {
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.3);
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: 0;
+    color: var(--color-amber);
     text-align: right;
 }
 
-.inv-slot.active {
-    background: rgba(6, 182, 212, 0.1);
-    border-color: rgba(6, 182, 212, 0.5);
-    box-shadow: 0 0 15px var(--glow-cyan);
+.inv-slot .slot-ammo {
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.58);
+    text-transform: uppercase;
 }
 
-.inv-slot.active div:first-child,
-.inv-slot.active .slot-index {
+.inv-slot.active {
+    background: linear-gradient(180deg, rgba(19, 215, 255, 0.26), rgba(1, 20, 28, 0.88));
+    border-color: rgba(19, 215, 255, 0.88);
+    box-shadow: 0 0 18px var(--glow-cyan), inset 0 0 18px rgba(19, 215, 255, 0.12);
+    transform: translateY(-4px);
+}
+
+.inv-slot.active .slot-name,
+.inv-slot.active .slot-index,
+.inv-slot.active .slot-ammo {
     color: var(--color-cyan);
     font-weight: bold;
+}
+
+.inv-slot.empty {
+    background: rgba(0, 0, 0, 0.42);
+    border-style: dashed;
+    opacity: 0.7;
+}
+
+.inv-slot.dry {
+    border-color: rgba(239, 68, 68, 0.72);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.24);
 }
 
 /* =========================================
@@ -280,26 +329,71 @@ canvas { display: block; }
 }
 
 #notifications {
-    font-size: 20px;
+    min-height: 34px;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     color: var(--text-white);
     text-transform: uppercase;
     text-align: center;
-    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    text-shadow: 0 0 12px rgba(255,255,255,0.55), 0 0 24px rgba(19, 215, 255, 0.35);
     margin-bottom: 16px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transform: skew(-6deg);
+}
+
+.notification:not(:empty) {
+    animation: notification-pop 0.28s ease-out;
+    background: rgba(0, 0, 0, 0.72);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.notification.equip,
+.notification.ammo,
+.notification.loot,
+.notification.heal {
+    color: var(--color-green);
+    border-color: rgba(69, 240, 143, 0.7);
+    box-shadow: 0 0 24px rgba(69, 240, 143, 0.22);
+}
+
+.notification.replace,
+.notification.perk {
+    color: var(--color-amber);
+    border-color: rgba(255, 191, 61, 0.75);
+    box-shadow: 0 0 24px rgba(255, 191, 61, 0.24);
+}
+
+.notification.stow {
+    color: var(--color-cyan);
+}
+
+.notification.miss {
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .prompt-pulse {
     display: none; /* Toggled in JS */
     font-size: 10px;
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     text-transform: uppercase;
     background: rgba(0, 0, 0, 0.8);
-    padding: 8px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 18px;
+    border: 1px solid rgba(255, 191, 61, 0.65);
     color: var(--text-white);
     animation: pulse-opacity 1.5s infinite;
+}
+
+.weapon-dry {
+    border-color: rgba(239, 68, 68, 0.72) !important;
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.34) !important;
+}
+
+.weapon-dry .massive-ammo {
+    color: var(--color-red) !important;
+    text-shadow: 0 0 16px rgba(239, 68, 68, 0.65);
 }
 
 @keyframes pulse-opacity {
@@ -325,7 +419,7 @@ canvas { display: block; }
 
 .search-label {
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--color-cyan);
     font-weight: 800;
@@ -347,4 +441,36 @@ canvas { display: block; }
     width: 0%;
     box-shadow: 0 0 10px var(--glow-cyan-strong);
     transition: width 0.1s linear;
-}
+}
+
+@keyframes notification-pop {
+    0% { transform: skew(-6deg) scale(0.92); opacity: 0; }
+    100% { transform: skew(-6deg) scale(1); opacity: 1; }
+}
+
+@media (max-width: 900px) {
+    .hud-layer {
+        padding: 18px;
+    }
+
+    #vitalsPanel {
+        width: 260px;
+    }
+
+    .combat-info {
+        width: 220px;
+    }
+
+    .massive-ammo {
+        font-size: 42px;
+    }
+
+    .inventory-grid {
+        gap: 6px;
+    }
+
+    .inv-slot {
+        width: 62px;
+        height: 66px;
+    }
+}

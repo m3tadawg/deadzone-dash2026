@@ -17,7 +17,14 @@ function prettyItemName(item) {
   if (!item) return "Empty";
   const id = typeof item === "object" ? item.id : item;
   if (!id) return "Empty";
-  return String(id).replaceAll("_", " ");
+  return prettyWeaponName(id);
+}
+
+function ammoLabel(item) {
+  if (!item) return "Open";
+  if (item.clip == null && item.reserve == null) return "Ready";
+  if ((item.clip || 0) <= 0 && (item.reserve || 0) <= 0) return "Dry";
+  return `${item.clip ?? 0}/${item.reserve ?? 0}`;
 }
 
 class HUDManager {
@@ -36,6 +43,7 @@ class HUDManager {
       inventoryBar: document.getElementById("inventoryBar"),
       notifications: document.getElementById("notifications"),
       vitalsPanel: document.getElementById("vitalsPanel"),
+      weaponPanel: document.getElementById("weaponPanel"),
       searchProgressContainer: document.getElementById("searchProgressContainer"),
       searchProgressFill: document.getElementById("searchProgressFill")
     };
@@ -50,14 +58,19 @@ class HUDManager {
       const slot = document.createElement("div");
       slot.className = `inv-slot ${i === 0 ? "active" : ""}`.trim();
 
-      const itemName = document.createElement("div");
       const slotIndex = document.createElement("div");
       slotIndex.className = "slot-index";
-      slotIndex.textContent = `Slot ${i + 1}`;
+      slotIndex.textContent = `${i + 1}`;
 
-      slot.append(itemName, slotIndex);
+      const itemName = document.createElement("div");
+      itemName.className = "slot-name";
+
+      const itemAmmo = document.createElement("div");
+      itemAmmo.className = "slot-ammo";
+
+      slot.append(slotIndex, itemName, itemAmmo);
       this.els.inventoryBar.appendChild(slot);
-      this._inventorySlots.push(itemName);
+      this._inventorySlots.push({ slot, itemName, itemAmmo });
     }
 
     this.renderInventory(FALLBACK_INVENTORY);
@@ -69,7 +82,6 @@ class HUDManager {
     if (percent > 0 && percent < 100) {
       this.els.searchProgressContainer.style.display = "flex";
       this.els.searchProgressFill.style.width = `${percent}%`;
-      // Hide prompt while searching
       if (this.els.searchPrompt) this.els.searchPrompt.style.display = "none";
     } else {
       this.els.searchProgressContainer.style.display = "none";
@@ -81,15 +93,17 @@ class HUDManager {
     this.els.searchPrompt.style.display = isVisible ? "block" : "none";
   }
 
-  showNotification(text) {
+  showNotification(text, tone = "info") {
     if (this._notificationTimeout) {
       clearTimeout(this._notificationTimeout);
       this._notificationTimeout = null;
     }
 
     this.els.notifications.innerText = text;
+    this.els.notifications.className = `notification ${tone}`;
     this._notificationTimeout = setTimeout(() => {
       this.els.notifications.innerText = "";
+      this.els.notifications.className = "notification";
       this._notificationTimeout = null;
     }, 3000);
   }
@@ -110,7 +124,6 @@ class HUDManager {
     this.els.healthText.textContent = `${health} / ${maxHealth}`;
     this.els.healthFill.style.width = `${healthPercent}%`;
 
-    // Toggle Critical Status
     if (healthPercent <= 25) {
       this.els.vitalsPanel.classList.remove("neon-cyan");
       this.els.vitalsPanel.classList.add("health-critical");
@@ -133,7 +146,8 @@ class HUDManager {
 
     const currentAmmo = localPlayer.ammo?.current;
     const reserveAmmo = localPlayer.ammo?.reserve;
-    this.els.ammoCount.textContent = currentAmmo == null ? "∞" : `${currentAmmo}/${reserveAmmo ?? 0}`;
+    this.els.ammoCount.textContent = currentAmmo == null ? "INF" : `${currentAmmo}/${reserveAmmo ?? 0}`;
+    this.els.weaponPanel.classList.toggle("weapon-dry", currentAmmo === 0 && (reserveAmmo ?? 0) === 0);
 
     this.renderInventory(localPlayer.inventory || FALLBACK_INVENTORY, localPlayer.selectedWeaponSlot || 0);
   }
@@ -142,14 +156,19 @@ class HUDManager {
     const slots = inventory.slice(0, 5);
     while (slots.length < 5) slots.push(null);
 
-    const inventorySignature = `${slots.map((item) => item ?? "").join("|")}::${selectedSlot}`;
+    const inventorySignature = `${JSON.stringify(slots)}::${selectedSlot}`;
     if (inventorySignature === this._inventorySignature) return;
 
     this._inventorySignature = inventorySignature;
     this._activeSlot = selectedSlot;
     slots.forEach((item, index) => {
-      this._inventorySlots[index].textContent = prettyItemName(item);
-      this._inventorySlots[index].parentElement.classList.toggle("active", index === this._activeSlot);
+      const slotEls = this._inventorySlots[index];
+      const status = ammoLabel(item);
+      slotEls.itemName.textContent = prettyItemName(item);
+      slotEls.itemAmmo.textContent = status;
+      slotEls.slot.classList.toggle("active", index === this._activeSlot);
+      slotEls.slot.classList.toggle("empty", !item);
+      slotEls.slot.classList.toggle("dry", item && status === "Dry");
     });
   }
 }

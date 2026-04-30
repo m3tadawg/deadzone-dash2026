@@ -6,5 +6,7 @@
   "color": "#4a2a1a",
   "collision": true,
   "searchable": true,
+  "lootChance": 0.62,
+  "lootMultiplier": 1.15,
   "searchTime": 1.5
 }

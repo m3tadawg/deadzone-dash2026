@@ -7,6 +7,23 @@ class WeaponLoadoutSystem {
     }
   }
 
+  getWeaponDisplayName(weaponId) {
+    const weapon = this.weaponById.get(weaponId);
+    if (weapon?.name) return weapon.name;
+    return String(weaponId || "Unknown").replaceAll("_", " ");
+  }
+
+  getSearchLootChance(prefabDef, areaMultiplier = 1) {
+    const baseChance = prefabDef?.lootChance ?? this.lootConfig.searchLootChance ?? 0.45;
+    const prefabMultiplier = prefabDef?.lootMultiplier ?? 1;
+    return Math.max(0, Math.min(0.95, baseChance * prefabMultiplier * (areaMultiplier || 1)));
+  }
+
+  rollSearchLoot(elapsedSeconds, prefabDef = null, areaMultiplier = 1) {
+    if (Math.random() > this.getSearchLootChance(prefabDef, areaMultiplier)) return null;
+    return this.pickLootWeapon(elapsedSeconds);
+  }
+
   createInitialLoadout(defaultWeaponId = "pistol") {
     const slotCount = this.lootConfig.maxWeaponSlots || 5;
     const inventory = new Array(slotCount).fill(null);
@@ -101,21 +118,24 @@ class WeaponLoadoutSystem {
     return validEntries[validEntries.length - 1][0];
   }
 
-  addWeaponToInventory(player, weaponId, autoEquip = true) {
+  addWeaponToInventory(player, weaponId, options = {}) {
     if (!player || !this.weaponById.has(weaponId)) return null;
     if (!Array.isArray(player.inventory)) player.inventory = [];
 
+    const autoEquip = typeof options === "boolean" ? options : options.autoEquip !== false;
     const weapon = this.weaponById.get(weaponId);
 
     const existingIndex = player.inventory.findIndex(item => item && item.id === weaponId);
     if (existingIndex >= 0) {
       // If we already have it, we add ammo to the reserve
       const item = player.inventory[existingIndex];
+      const beforeReserve = item.reserve || 0;
       if (weapon.type === 'thrown') {
         item.reserve += 1;
       } else if (weapon.type !== 'melee') {
         item.reserve += (weapon.clipSize || 10) * 2;
       }
+      const ammoAdded = Math.max(0, (item.reserve || 0) - beforeReserve);
 
       // Sync HUD if this is the active weapon
       if (player.weapon === item.id) {
@@ -126,7 +146,14 @@ class WeaponLoadoutSystem {
       }
 
       if (autoEquip) this.switchToSlot(player, existingIndex);
-      return { weaponId, slot: existingIndex, isNew: false };
+      return {
+        action: weapon.type === 'melee' ? "duplicate" : "ammo",
+        weaponId,
+        slot: existingIndex,
+        isNew: false,
+        equipped: player.selectedWeaponSlot === existingIndex,
+        ammoAdded
+      };
     }
 
     const newItem = {
@@ -139,13 +166,28 @@ class WeaponLoadoutSystem {
     if (emptyIndex >= 0) {
       player.inventory[emptyIndex] = newItem;
       if (autoEquip) this.switchToSlot(player, emptyIndex);
-      return { weaponId, slot: emptyIndex, isNew: true };
+      return {
+        action: autoEquip ? "equipped" : "stowed",
+        weaponId,
+        slot: emptyIndex,
+        isNew: true,
+        equipped: player.selectedWeaponSlot === emptyIndex
+      };
     }
 
     const replaceIndex = player.selectedWeaponSlot || 0;
+    const replacedWeaponId = player.inventory[replaceIndex]?.id || null;
     player.inventory[replaceIndex] = newItem;
-    if (autoEquip) this.switchToSlot(player, replaceIndex);
-    return { weaponId, slot: replaceIndex, isNew: true, replaced: true };
+    this.switchToSlot(player, replaceIndex);
+    return {
+      action: "replaced",
+      weaponId,
+      slot: replaceIndex,
+      isNew: true,
+      replaced: true,
+      replacedWeaponId,
+      equipped: true
+    };
   }
 
   refillAmmo(player) {
@@ -154,7 +196,7 @@ class WeaponLoadoutSystem {
     
     // If holding melee or nothing, find the first valid ranged weapon to apply ammo to
     if (!item || !this.weaponById.has(item.id) || this.weaponById.get(item.id).type === 'melee') {
-      const validIndex = player.inventory.findIndex(i => i && this.weaponById.get(i.id).type !== 'melee');
+      const validIndex = player.inventory.findIndex(i => i && this.weaponById.get(i.id)?.type !== 'melee');
       if (validIndex >= 0) {
         slotIndex = validIndex;
         item = player.inventory[slotIndex];

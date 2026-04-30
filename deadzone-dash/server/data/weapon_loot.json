@@ -1,6 +1,7 @@
 {
   "searchDurationMs": 1800,
   "dropChance": 0.05,
+  "searchLootChance": 0.5,
   "maxWeaponSlots": 5,
   "tiers": [
     {

@@ -43,6 +43,7 @@ let projectiles = {};
 let activeHazards = [];
 let activeDamageZones = [];
 let droppedItems = {};
+let playerSockets = {};
 
 function createPlayer(id) {
   const loadout = weaponLoadoutSystem.createInitialLoadout("pistol");
@@ -71,9 +72,11 @@ function completeSearch(player) {
   if (!player || !player.searchTarget) return;
 
   const area = WorldSystem.getAreaAt(player.x, player.z);
-  const lootId = weaponLoadoutSystem.rollForLoot(
+  const searchDef = WorldSystem.catalog.prefabs[player.searchTarget.type];
+  const lootId = weaponLoadoutSystem.rollSearchLoot(
     (Date.now() - gameStartTime) / 1000,
-    (area?.lootMultiplier || 1) * 2.0 // Boosted loot from searching
+    searchDef,
+    area?.lootMultiplier || 1
   );
 
   if (lootId) {
@@ -85,9 +88,9 @@ function completeSearch(player) {
       z: player.z,
       createdAt: Date.now()
     };
-    broadcast({ type: "notification", text: "Found something!" });
+    notifyPlayer(player.id, "Found something!", "loot");
   } else {
-    broadcast({ type: "notification", text: "Nothing found..." });
+    notifyPlayer(player.id, `${player.searchTarget.type.replaceAll("_", " ")} was picked clean`, "miss");
   }
 
   player.isSearching = false;
@@ -117,6 +120,7 @@ wss.on("connection", (ws) => {
   const id = Math.random().toString(36).substr(2, 9);
 
   players[id] = createPlayer(id);
+  playerSockets[id] = ws;
 
   console.log("Player connected:", id);
   ws.send(JSON.stringify({ 
@@ -247,6 +251,7 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     delete players[id];
+    delete playerSockets[id];
     console.log("Player disconnected:", id);
   });
 });
@@ -258,6 +263,52 @@ function broadcast(msg) {
             client.send(data);
         }
     });
+}
+
+function notifyPlayer(playerId, text, tone = "info") {
+    const client = playerSockets[playerId];
+    if (client?.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: "notification", text, tone }));
+    }
+}
+
+function describeWeaponLootResult(result, weapon) {
+  const weaponName = weaponLoadoutSystem.getWeaponDisplayName(result.weaponId);
+  const slotText = `slot ${result.slot + 1}`;
+
+  if (result.action === "replaced") {
+    const oldName = weaponLoadoutSystem.getWeaponDisplayName(result.replacedWeaponId);
+    return {
+      text: `Replaced ${oldName} with ${weaponName} (${slotText})`,
+      tone: "replace"
+    };
+  }
+
+  if (result.action === "stowed") {
+    return {
+      text: `Stowed ${weaponName} (${slotText})`,
+      tone: "stow"
+    };
+  }
+
+  if (result.action === "equipped") {
+    return {
+      text: `Equipped ${weaponName} (${slotText})`,
+      tone: "equip"
+    };
+  }
+
+  if (result.action === "ammo" && weapon?.type !== "melee") {
+    return {
+      text: `+${result.ammoAdded} reserve for ${weaponName}`,
+      tone: "ammo"
+    };
+  }
+
+  return {
+    text: `Already carrying ${weaponName}`,
+    tone: "stow"
+  };
 }
 
 function broadcastHit(x, z, type = "zombie", isHeadshot = false) {
@@ -345,12 +396,16 @@ setInterval(() => {
           const lootId = item.weaponId;
           let notificationText = "";
 
+          let notificationTone = "info";
+
           if (lootId === "health_pack") {
             player.health = Math.min(playerConfig.maxHealth, player.health + 25);
             notificationText = "Picked up Health Pack (+25 HP)";
+            notificationTone = "heal";
           } else if (lootId === "ammo_pack") {
             const success = weaponLoadoutSystem.refillAmmo(player);
             notificationText = success ? "Refilled Ammo" : "Ammo Pack (No weapon to refill)";
+            notificationTone = success ? "ammo" : "miss";
           } else if (lootId.startsWith("perk_")) {
             const perkType = lootId.replace("perk_", "");
             const perk = perksConfig.find(p => p.type === perkType);
@@ -361,31 +416,25 @@ setInterval(() => {
                 modifiers: perk.modifiers 
               });
               notificationText = `Acquired Perk: ${perkType.replaceAll("_", " ")}`;
+              notificationTone = "perk";
             }
           } else {
             // It's a weapon
-            const lootResult = weaponLoadoutSystem.addWeaponToInventory(player, lootId, false);
+            const activeSlot = player.inventory?.[player.selectedWeaponSlot || 0];
+            const activeWeapon = activeSlot ? weaponLoadoutSystem.weaponById.get(activeSlot.id) : null;
+            const activeAmmo = (activeSlot?.clip || 0) + (activeSlot?.reserve || 0);
+            const shouldEquip = !activeSlot || !activeWeapon || activeWeapon.type === "melee" || activeAmmo <= 0;
+            const lootResult = weaponLoadoutSystem.addWeaponToInventory(player, lootId, { autoEquip: shouldEquip });
             if (lootResult) {
-              const weaponName = lootResult.weaponId.replaceAll("_", " ");
               const weapon = weaponLoadoutSystem.weaponById.get(lootResult.weaponId);
-              const isAmmoType = weapon && weapon.type !== 'melee';
-              
-              notificationText = lootResult.isNew
-                ? `Looted ${weaponName} (slot ${lootResult.slot + 1})`
-                : (isAmmoType ? `Found more ammo for ${weaponName}` : `Already carrying ${weaponName}`);
+              const description = describeWeaponLootResult(lootResult, weapon);
+              notificationText = description.text;
+              notificationTone = description.tone;
             }
           }
 
           if (notificationText) {
-            const msg = JSON.stringify({
-              type: "notification",
-              text: notificationText
-            });
-            wss.clients.forEach(client => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(msg);
-              }
-            });
+            notifyPlayer(player.id, notificationText, notificationTone);
           }
         delete droppedItems[item.id];
       }

@@ -33,7 +33,7 @@ socket.onmessage = (msg) => {
     const height = data.isHeadshot ? 1.8 : 1.2;
     sceneManager.particles.emit(effectType, new THREE.Vector3(data.x, height, data.z));
   } else if (data.type === "notification") {
-    hud.showNotification(data.text);
+    hud.showNotification(data.text, data.tone);
   }
 };
 
