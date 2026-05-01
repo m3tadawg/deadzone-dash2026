@@ -196,7 +196,7 @@ buildSwatches('hat-col-swatches', HAT_COLS, hex => char.setHatColour(hex), char.
 buildChips('bp-chips', ['none','small','tactical','duffel'], val => char.setBackpack(val), char._config.backpack);
 
 // ─── Shoulders ────────────────────────────────────────────────────────────────
-buildChips('shoulder-chips', ['none','pads','scraps'], val => char.setShoulders(val), char._config.shoulders);
+buildChips('shoulder-chips', ['none'], val => char.setShoulders(val), char._config.shoulders);
 
 // ─── Sliders ──────────────────────────────────────────────────────────────────
 const slHead = document.getElementById('sl-head');
@@ -254,19 +254,19 @@ const PRESETS = {
     skin: "#B5713E", shirt: "#6B3A2A", trousers: "#1C1C1C",
     hairColour: "#3B1F07", hatColour: "#AA3333",
     hat: "beanie", hair: "none", beard: "full", scar: true,
-    backpack: "tactical", shoulders: "pads", headScale: 1.05, bodyWidth: 1.15,
+    backpack: "tactical", shoulders: "none", headScale: 1.05, bodyWidth: 1.15,
   },
   survivor: {
     skin: "#FDDBB4", shirt: "#8B6914", trousers: "#3D2B1F",
     hairColour: "#B8732A", hatColour: "#553322",
     hat: "none", hair: "long", beard: "moustache", scar: true,
-    backpack: "duffel", shoulders: "scraps", headScale: 1.0, bodyWidth: 1.0,
+    backpack: "duffel", shoulders: "none", headScale: 1.0, bodyWidth: 1.0,
   },
   militia: {
     skin: "#8B4513", shirt: "#4A5C3E", trousers: "#2A3020",
     hairColour: "#888888", hatColour: "#3A3A3A",
     hat: "helmet", hair: "short", beard: "none", scar: false,
-    backpack: "tactical", shoulders: "pads", headScale: 0.95, bodyWidth: 1.2,
+    backpack: "tactical", shoulders: "none", headScale: 0.95, bodyWidth: 1.2,
   },
   nomad: {
     skin: "#4A2C0A", shirt: "#7C4E3A", trousers: "#4A3A28",
@@ -278,7 +278,7 @@ const PRESETS = {
     skin: "#4A2C0A", shirt: "#1C1C1C", trousers: "#1A1A2A",
     hairColour: "#1A0A00", hatColour: "#222222",
     hat: "hood", hair: "none", beard: "none", scar: true,
-    backpack: "small", shoulders: "scraps", headScale: 0.92, bodyWidth: 1.05,
+    backpack: "small", shoulders: "none", headScale: 0.92, bodyWidth: 1.05,
   },
 };
 

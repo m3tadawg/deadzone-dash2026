@@ -9,7 +9,7 @@
  *   character.setHair('short' | 'long' | 'mohawk' | 'bun' | 'none')
  *   character.setBeard('none' | 'stubble' | 'full' | 'moustache')
  *   character.setBackpack('none' | 'small' | 'tactical' | 'duffel')
- *   character.setShoulders('none' | 'pads' | 'scraps')
+ *   character.setShoulders('none')
  *   character.setScar(true | false)
  *   character.setSkin(hexColour)
  *   character.setShirt(hexColour)
@@ -235,9 +235,9 @@ export class Character {
 
   // ─── SHOULDER GEAR ─────────────────────────────────────────────────────────
   setShoulders(type) {
-    this._config.shoulders = type;
+    this._config.shoulders = "none";
     clearNode(this._attach.shoulderNode);
-    const factory = SHOULDER_TYPES[type];
+    const factory = SHOULDER_TYPES.none;
     if (factory) this._attach.shoulderNode.add(factory());
     return this;
   }
@@ -291,7 +291,7 @@ export class Character {
       beard:          pick(["none", "none", "stubble", "stubble", "full", "moustache"]),
       scar:           Math.random() > 0.65,
       backpack:       pick(["none", "none", "small", "tactical", "duffel"]),
-      shoulders:      pick(["none", "none", "none", "pads", "scraps"]),
+      shoulders:      "none",
     };
 
     this.applyConfig(cfg);

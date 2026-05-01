@@ -379,31 +379,4 @@ export const BACKPACK_TYPES = {
 // ─── SHOULDER GEAR (silhouette boosters) ──────────────────────────────────────
 export const SHOULDER_TYPES = {
   none: null,
-  pads: (colHex = "#3A3A3A") => {
-    const root = new THREE.Object3D();
-    const padGeo = geo("shoulderPad", () => new THREE.BoxGeometry(0.28, 0.2, 0.32));
-    const mat = getMat(colHex, { roughness: 0.5, metalness: 0.4 });
-
-    const left = new THREE.Mesh(padGeo, mat);
-    left.position.set(-0.7, 0.6, 0);
-
-    const right = new THREE.Mesh(padGeo, mat);
-    right.position.set(0.7, 0.6, 0);
-
-    root.add(left, right);
-    return root;
-  },
-  scraps: (colHex = "#555544") => {
-    const root = new THREE.Object3D();
-    for (const side of [-1, 1]) {
-      const scrap = new THREE.Mesh(
-        geo("scrap", () => new THREE.BoxGeometry(0.22, 0.28, 0.16)),
-        getMat(colHex, { roughness: 0.95 }).clone()
-      );
-      scrap.position.set(side * 0.68, 0.55, 0.05);
-      scrap.rotation.z = side * 0.2;
-      root.add(scrap);
-    }
-    return root;
-  },
 };

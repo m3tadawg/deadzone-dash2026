@@ -269,7 +269,7 @@ const EFFECT_PROFILES = {
         life: 0.1,
         velocity: 0.5,
         spread: 0.1,
-        size: 4.0,
+        size: 1.35,
         color: 0xffcc33,
         blending: THREE.AdditiveBlending
     },

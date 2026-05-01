@@ -85,7 +85,6 @@ const PLAYER_VISUAL_DEFAULTS = {
     headScale: 1,
     hair: "short",
     facialHair: "stubble",
-    shoulders: "pads",
     backpack: "small"
 };
 
@@ -112,14 +111,8 @@ function createPlayerVariation(playerData = {}) {
         headScale: pickVariant([0.92, 0.98, 1, 1.04, 1.08], hash, 2),
         hair: pickVariant(["short", "long", "bun", "mohawk", "none"], hash, 3),
         facialHair: pickVariant(["none", "none", "stubble", "beard"], hash, 4),
-        shoulders: pickVariant(["none", "pads", "scraps"], hash, 5),
         backpack: pickVariant(["none", "small", "large"], hash, 6)
     };
-}
-
-function createLeg(root, side, trousersColor, bootColor) {
-    meshBox(root, `${side < 0 ? "left" : "right"}Thigh`, [0.22, 0.52, 0.22], [side * 0.22, 0.1, 0.02], trousersColor, [0, 0, side * 0.04]);
-    meshBox(root, `${side < 0 ? "left" : "right"}Boot`, [0.23, 0.26, 0.34], [side * 0.24, -0.3, -0.08], bootColor, [0.05, 0, side * 0.02]);
 }
 
 function createPlayerHead(root, cfg) {
@@ -163,12 +156,6 @@ function createPlayerGear(root, cfg) {
     meshBox(root, "strapRight", [0.08, 0.78, 0.06], [0.22, 0.91, -0.34], cfg.gearColor, [0, 0, 0.34]);
     meshBox(root, "accentPatch", [0.18, 0.12, 0.04], [0.23, 0.96, -0.38], cfg.accentColor);
 
-    if (cfg.shoulders !== "none") {
-        const shoulderColor = cfg.shoulders === "scraps" ? "#5a5648" : cfg.gearColor;
-        meshBox(root, "leftShoulder", [0.28, 0.16, 0.34], [-0.5, 1.18, -0.02], shoulderColor, [0, 0, -0.24]);
-        meshBox(root, "rightShoulder", [0.28, 0.16, 0.34], [0.5, 1.18, -0.02], shoulderColor, [0, 0, 0.24]);
-    }
-
     if (cfg.backpack !== "none") {
         const packHeight = cfg.backpack === "large" ? 0.88 : 0.62;
         meshBox(root, "backpack", [0.58, packHeight, 0.24], [0, 0.74, 0.36], cfg.gearColor);
@@ -191,8 +178,6 @@ export function createPlayerMesh(playerData = {}) {
     meshBox(bodyContainer, "waist", [0.54 * cfg.bodyWidth, 0.18, 0.34], [0, 0.24, 0], cfg.trousersColor);
     meshBox(bodyContainer, "neck", [0.16, 0.18, 0.16], [0, 1.28, -0.02], cfg.skinColor);
     createPlayerHead(bodyContainer, cfg);
-    createLeg(bodyContainer, -1, cfg.trousersColor, "#171714");
-    createLeg(bodyContainer, 1, cfg.trousersColor, "#171714");
     createPlayerGear(bodyContainer, cfg);
 
     parent.add(bodyContainer);
@@ -231,9 +216,9 @@ export function applyPlayerCustomization(mesh, config) {
         const nextColor =
             (torsoColor && node.name === "torso" && torsoColor)
             || (skinColor && ["head", "neck", "nose"].includes(node.name) && skinColor)
-            || (trousersColor && ["waist", "leftThigh", "rightThigh"].includes(node.name) && trousersColor)
+            || (trousersColor && node.name === "waist" && trousersColor)
             || (hairColor && ["hairCap", "backHair", "mohawk", "hairBun", "leftBrow", "rightBrow", "stubble", "beard"].includes(node.name) && hairColor)
-            || (gearColor && ["chestRig", "strapLeft", "strapRight", "leftShoulder", "rightShoulder", "backpack", "backpackPocket"].includes(node.name) && gearColor)
+            || (gearColor && ["chestRig", "strapLeft", "strapRight", "backpack", "backpackPocket"].includes(node.name) && gearColor)
             || (accentColor && node.name === "accentPatch" && accentColor);
 
         if (!nextColor) return;
